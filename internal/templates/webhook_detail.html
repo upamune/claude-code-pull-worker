@@ -133,15 +133,102 @@
                                     <textarea name="description" rows="3"
                                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">{{.Description}}</textarea>
                                 </div>
-                                <div class="mb-4">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Claude Options (JSON)</label>
-                                    <textarea name="claude_options" rows="10"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">{{.ClaudeOptions}}</textarea>
+                                <!-- Claude Options -->
+                                <div class="mb-6">
+                                    <h4 class="text-lg font-medium text-gray-900 mb-4">Claude Options</h4>
+                                    
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Working Directory</label>
+                                            <input type="text" name="working_dir" value="{{.WorkingDir}}"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Model</label>
+                                            <input type="text" name="model" value="{{.Model}}" placeholder="e.g., claude-3-5-sonnet-20241022"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Fallback Model</label>
+                                            <input type="text" name="fallback_model" value="{{.FallbackModel}}"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Max Thinking Tokens</label>
+                                            <input type="number" name="max_thinking_tokens" value="{{.MaxThinkingTokens}}"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Max Turns</label>
+                                            <input type="number" name="max_turns" value="{{.MaxTurns}}"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Permission Mode</label>
+                                            <select name="permission_mode" 
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <option value="auto" {{if eq .PermissionMode "auto"}}selected{{end}}>Auto</option>
+                                                <option value="allow" {{if eq .PermissionMode "allow"}}selected{{end}}>Allow</option>
+                                                <option value="ask" {{if eq .PermissionMode "ask"}}selected{{end}}>Ask</option>
+                                                <option value="deny" {{if eq .PermissionMode "deny"}}selected{{end}}>Deny</option>
+                                                <option value="review" {{if eq .PermissionMode "review"}}selected{{end}}>Review</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-4">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Custom System Prompt</label>
+                                        <textarea name="custom_system_prompt" rows="3"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">{{.CustomSystemPrompt}}</textarea>
+                                    </div>
+                                    
+                                    <div class="mt-4">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Append System Prompt</label>
+                                        <textarea name="append_system_prompt" rows="3"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">{{.AppendSystemPrompt}}</textarea>
+                                    </div>
+                                    
+                                    <div class="mt-4 grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Allowed Tools (comma-separated)</label>
+                                            <input type="text" name="allowed_tools" value="{{.AllowedTools}}" placeholder="e.g., Bash, Read, Write"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Disallowed Tools (comma-separated)</label>
+                                            <input type="text" name="disallowed_tools" value="{{.DisallowedTools}}"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-4">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Permission Prompt Tool Name</label>
+                                        <input type="text" name="permission_prompt_tool_name" value="{{.PermissionPromptToolName}}"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    
+                                    <div class="mt-4">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">MCP Servers (JSON)</label>
+                                        <textarea name="mcp_servers" rows="3"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">{{.MCPServers}}</textarea>
+                                    </div>
                                 </div>
-                                <div class="mb-4">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Notification Config (JSON)</label>
-                                    <textarea name="notification_config" rows="5"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">{{.NotificationConfig}}</textarea>
+                                <!-- Notification Settings -->
+                                <div class="mb-6">
+                                    <h4 class="text-lg font-medium text-gray-900 mb-4">Notification Settings</h4>
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Discord Webhook URL</label>
+                                        <input type="url" name="discord_webhook_url" value="{{.DiscordWebhookURL}}"
+                                            placeholder="https://discord.com/api/webhooks/..."
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <p class="mt-1 text-sm text-gray-500">Leave empty to use global default</p>
+                                    </div>
                                 </div>
                                 <div class="flex justify-end">
                                     <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">

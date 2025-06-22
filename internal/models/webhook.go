@@ -3,8 +3,7 @@ package models
 import "time"
 
 type WebhookRequest struct {
-	Prompt  string `json:"prompt"`
-	Context string `json:"context,omitempty"`
+	Prompt string `json:"prompt"`
 }
 
 type WebhookResponse struct {

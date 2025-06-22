@@ -49,10 +49,6 @@
             </div>
         </div>
         <div class="mt-4">
-            <span class="font-medium text-sm">Claude Options:</span>
-            <pre class="bg-gray-100 p-2 rounded mt-1 text-xs overflow-x-auto">{{.ClaudeOptions}}</pre>
-        </div>
-        <div class="mt-4">
             <span class="font-medium text-sm">使用例 (curl):</span>
             <pre class="bg-gray-900 text-gray-100 p-3 rounded mt-1 text-xs overflow-x-auto font-mono">curl -X POST http://localhost:8081/webhooks/{{.ID}} \
   -H "Authorization: Bearer YOUR_API_KEY" \

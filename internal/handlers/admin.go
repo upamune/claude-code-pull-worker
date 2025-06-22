@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"html/template"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/upamune/claude-code-pull-worker/internal/db"
@@ -91,17 +93,49 @@ func (h *AdminHandler) handleWebhookDetail(w http.ResponseWriter, r *http.Reques
 	}
 
 	data := map[string]interface{}{
-		"ID":                 webhook.ID,
-		"Name":               webhook.Name,
-		"Description":        webhook.Description.String,
-		"IsActive":           webhook.IsActive,
-		"CreatedAt":          webhook.CreatedAt.Format("2006-01-02 15:04:05"),
-		"ClaudeOptions":      string(webhook.ClaudeOptions.([]byte)),
-		"NotificationConfig": "",
+		"ID":                       webhook.ID,
+		"Name":                     webhook.Name,
+		"Description":              webhook.Description.String,
+		"IsActive":                 webhook.IsActive,
+		"CreatedAt":                webhook.CreatedAt.Format("2006-01-02 15:04:05"),
+		"WorkingDir":               webhook.WorkingDir.String,
+		"MaxThinkingTokens":        func() string {
+			if webhook.MaxThinkingTokens.Valid {
+				return strconv.FormatInt(webhook.MaxThinkingTokens.Int64, 10)
+			}
+			return ""
+		}(),
+		"MaxTurns":                 func() string {
+			if webhook.MaxTurns.Valid {
+				return strconv.FormatInt(webhook.MaxTurns.Int64, 10)
+			}
+			return ""
+		}(),
+		"CustomSystemPrompt":       webhook.CustomSystemPrompt.String,
+		"AppendSystemPrompt":       webhook.AppendSystemPrompt.String,
+		"AllowedTools":             webhook.AllowedTools.String,
+		"DisallowedTools":          webhook.DisallowedTools.String,
+		"PermissionMode":           webhook.PermissionMode.String,
+		"PermissionPromptToolName": webhook.PermissionPromptToolName.String,
+		"Model":                    webhook.Model.String,
+		"FallbackModel":            webhook.FallbackModel.String,
+		"MCPServers":               webhook.McpServers.String,
+		"NotificationConfig":       "",
+		"DiscordWebhookURL":        "",
 	}
 	
+	// Extract Discord webhook URL from notification config
 	if notifBytes, ok := webhook.NotificationConfig.([]byte); ok {
 		data["NotificationConfig"] = string(notifBytes)
+		
+		var notifConfig map[string]interface{}
+		if err := json.Unmarshal(notifBytes, &notifConfig); err == nil {
+			if discord, ok := notifConfig["discord"].(map[string]interface{}); ok {
+				if webhookURL, ok := discord["webhook_url"].(string); ok {
+					data["DiscordWebhookURL"] = webhookURL
+				}
+			}
+		}
 	}
 
 	w.Header().Set("Content-Type", "text/html")

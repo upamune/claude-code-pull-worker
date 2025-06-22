@@ -13,11 +13,11 @@ import (
 const completeJob = `-- name: CompleteJob :exec
 UPDATE job_queue
 SET 
-    status = 'completed',
+    job_status = 'completed',
     completed_at = CURRENT_TIMESTAMP,
     response = ?,
     execution_time_ms = ?
-WHERE id = ? AND status = 'processing'
+WHERE id = ? AND job_status = 'processing'
 `
 
 type CompleteJobParams struct {
@@ -34,18 +34,18 @@ func (q *Queries) CompleteJob(ctx context.Context, arg CompleteJobParams) error 
 const dequeueJob = `-- name: DequeueJob :one
 UPDATE job_queue
 SET 
-    status = 'processing',
+    job_status = 'processing',
     started_at = CURRENT_TIMESTAMP,
     visibility_timeout = datetime('now', '+10 minutes'),
     worker_id = ?
 WHERE id = (
     SELECT id FROM job_queue
-    WHERE status = 'pending'
-       OR (status = 'processing' AND visibility_timeout < CURRENT_TIMESTAMP)
+    WHERE job_status = 'pending'
+       OR (job_status = 'processing' AND visibility_timeout < CURRENT_TIMESTAMP)
     ORDER BY priority DESC, created_at ASC
     LIMIT 1
 )
-RETURNING id, webhook_id, api_key_id, prompt, context, claude_options, status, priority, retry_count, max_retries, worker_id, visibility_timeout, error_message, response, execution_time_ms, created_at, started_at, completed_at
+RETURNING id, webhook_id, api_key_id, prompt, job_status, priority, retry_count, max_retries, worker_id, visibility_timeout, error_message, response, execution_time_ms, created_at, started_at, completed_at, working_dir, max_thinking_tokens, max_turns, custom_system_prompt, append_system_prompt, allowed_tools, disallowed_tools, permission_mode, permission_prompt_tool_name, model, fallback_model, mcp_servers
 `
 
 func (q *Queries) DequeueJob(ctx context.Context, workerID sql.NullString) (JobQueue, error) {
@@ -56,9 +56,7 @@ func (q *Queries) DequeueJob(ctx context.Context, workerID sql.NullString) (JobQ
 		&i.WebhookID,
 		&i.ApiKeyID,
 		&i.Prompt,
-		&i.Context,
-		&i.ClaudeOptions,
-		&i.Status,
+		&i.JobStatus,
 		&i.Priority,
 		&i.RetryCount,
 		&i.MaxRetries,
@@ -70,6 +68,18 @@ func (q *Queries) DequeueJob(ctx context.Context, workerID sql.NullString) (JobQ
 		&i.CreatedAt,
 		&i.StartedAt,
 		&i.CompletedAt,
+		&i.WorkingDir,
+		&i.MaxThinkingTokens,
+		&i.MaxTurns,
+		&i.CustomSystemPrompt,
+		&i.AppendSystemPrompt,
+		&i.AllowedTools,
+		&i.DisallowedTools,
+		&i.PermissionMode,
+		&i.PermissionPromptToolName,
+		&i.Model,
+		&i.FallbackModel,
+		&i.McpServers,
 	)
 	return i, err
 }
@@ -79,21 +89,41 @@ INSERT INTO job_queue (
     webhook_id,
     api_key_id,
     prompt,
-    context,
-    claude_options,
-    priority
+    priority,
+    working_dir,
+    max_thinking_tokens,
+    max_turns,
+    custom_system_prompt,
+    append_system_prompt,
+    allowed_tools,
+    disallowed_tools,
+    permission_mode,
+    permission_prompt_tool_name,
+    model,
+    fallback_model,
+    mcp_servers
 ) VALUES (
-    ?, ?, ?, ?, ?, ?
-) RETURNING id, webhook_id, api_key_id, prompt, context, claude_options, status, priority, retry_count, max_retries, worker_id, visibility_timeout, error_message, response, execution_time_ms, created_at, started_at, completed_at
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+) RETURNING id, webhook_id, api_key_id, prompt, job_status, priority, retry_count, max_retries, worker_id, visibility_timeout, error_message, response, execution_time_ms, created_at, started_at, completed_at, working_dir, max_thinking_tokens, max_turns, custom_system_prompt, append_system_prompt, allowed_tools, disallowed_tools, permission_mode, permission_prompt_tool_name, model, fallback_model, mcp_servers
 `
 
 type EnqueueJobParams struct {
-	WebhookID     string         `json:"webhook_id"`
-	ApiKeyID      sql.NullInt64  `json:"api_key_id"`
-	Prompt        string         `json:"prompt"`
-	Context       sql.NullString `json:"context"`
-	ClaudeOptions sql.NullString `json:"claude_options"`
-	Priority      int64          `json:"priority"`
+	WebhookID                string         `json:"webhook_id"`
+	ApiKeyID                 sql.NullInt64  `json:"api_key_id"`
+	Prompt                   string         `json:"prompt"`
+	Priority                 int64          `json:"priority"`
+	WorkingDir               sql.NullString `json:"working_dir"`
+	MaxThinkingTokens        sql.NullInt64  `json:"max_thinking_tokens"`
+	MaxTurns                 sql.NullInt64  `json:"max_turns"`
+	CustomSystemPrompt       sql.NullString `json:"custom_system_prompt"`
+	AppendSystemPrompt       sql.NullString `json:"append_system_prompt"`
+	AllowedTools             sql.NullString `json:"allowed_tools"`
+	DisallowedTools          sql.NullString `json:"disallowed_tools"`
+	PermissionMode           sql.NullString `json:"permission_mode"`
+	PermissionPromptToolName sql.NullString `json:"permission_prompt_tool_name"`
+	Model                    sql.NullString `json:"model"`
+	FallbackModel            sql.NullString `json:"fallback_model"`
+	McpServers               sql.NullString `json:"mcp_servers"`
 }
 
 func (q *Queries) EnqueueJob(ctx context.Context, arg EnqueueJobParams) (JobQueue, error) {
@@ -101,9 +131,19 @@ func (q *Queries) EnqueueJob(ctx context.Context, arg EnqueueJobParams) (JobQueu
 		arg.WebhookID,
 		arg.ApiKeyID,
 		arg.Prompt,
-		arg.Context,
-		arg.ClaudeOptions,
 		arg.Priority,
+		arg.WorkingDir,
+		arg.MaxThinkingTokens,
+		arg.MaxTurns,
+		arg.CustomSystemPrompt,
+		arg.AppendSystemPrompt,
+		arg.AllowedTools,
+		arg.DisallowedTools,
+		arg.PermissionMode,
+		arg.PermissionPromptToolName,
+		arg.Model,
+		arg.FallbackModel,
+		arg.McpServers,
 	)
 	var i JobQueue
 	err := row.Scan(
@@ -111,9 +151,7 @@ func (q *Queries) EnqueueJob(ctx context.Context, arg EnqueueJobParams) (JobQueu
 		&i.WebhookID,
 		&i.ApiKeyID,
 		&i.Prompt,
-		&i.Context,
-		&i.ClaudeOptions,
-		&i.Status,
+		&i.JobStatus,
 		&i.Priority,
 		&i.RetryCount,
 		&i.MaxRetries,
@@ -125,6 +163,18 @@ func (q *Queries) EnqueueJob(ctx context.Context, arg EnqueueJobParams) (JobQueu
 		&i.CreatedAt,
 		&i.StartedAt,
 		&i.CompletedAt,
+		&i.WorkingDir,
+		&i.MaxThinkingTokens,
+		&i.MaxTurns,
+		&i.CustomSystemPrompt,
+		&i.AppendSystemPrompt,
+		&i.AllowedTools,
+		&i.DisallowedTools,
+		&i.PermissionMode,
+		&i.PermissionPromptToolName,
+		&i.Model,
+		&i.FallbackModel,
+		&i.McpServers,
 	)
 	return i, err
 }
@@ -132,7 +182,7 @@ func (q *Queries) EnqueueJob(ctx context.Context, arg EnqueueJobParams) (JobQueu
 const failJob = `-- name: FailJob :exec
 UPDATE job_queue
 SET 
-    status = CASE 
+    job_status = CASE 
         WHEN retry_count >= max_retries THEN 'failed'
         ELSE 'pending'
     END,
@@ -140,7 +190,7 @@ SET
     error_message = ?,
     visibility_timeout = NULL,
     worker_id = NULL
-WHERE id = ? AND status = 'processing'
+WHERE id = ? AND job_status = 'processing'
 `
 
 type FailJobParams struct {
@@ -154,7 +204,7 @@ func (q *Queries) FailJob(ctx context.Context, arg FailJobParams) error {
 }
 
 const getJobStatus = `-- name: GetJobStatus :one
-SELECT id, webhook_id, api_key_id, prompt, context, claude_options, status, priority, retry_count, max_retries, worker_id, visibility_timeout, error_message, response, execution_time_ms, created_at, started_at, completed_at FROM job_queue WHERE id = ?
+SELECT id, webhook_id, api_key_id, prompt, job_status, priority, retry_count, max_retries, worker_id, visibility_timeout, error_message, response, execution_time_ms, created_at, started_at, completed_at, working_dir, max_thinking_tokens, max_turns, custom_system_prompt, append_system_prompt, allowed_tools, disallowed_tools, permission_mode, permission_prompt_tool_name, model, fallback_model, mcp_servers FROM job_queue WHERE id = ?
 `
 
 func (q *Queries) GetJobStatus(ctx context.Context, id int64) (JobQueue, error) {
@@ -165,9 +215,7 @@ func (q *Queries) GetJobStatus(ctx context.Context, id int64) (JobQueue, error) 
 		&i.WebhookID,
 		&i.ApiKeyID,
 		&i.Prompt,
-		&i.Context,
-		&i.ClaudeOptions,
-		&i.Status,
+		&i.JobStatus,
 		&i.Priority,
 		&i.RetryCount,
 		&i.MaxRetries,
@@ -179,12 +227,24 @@ func (q *Queries) GetJobStatus(ctx context.Context, id int64) (JobQueue, error) 
 		&i.CreatedAt,
 		&i.StartedAt,
 		&i.CompletedAt,
+		&i.WorkingDir,
+		&i.MaxThinkingTokens,
+		&i.MaxTurns,
+		&i.CustomSystemPrompt,
+		&i.AppendSystemPrompt,
+		&i.AllowedTools,
+		&i.DisallowedTools,
+		&i.PermissionMode,
+		&i.PermissionPromptToolName,
+		&i.Model,
+		&i.FallbackModel,
+		&i.McpServers,
 	)
 	return i, err
 }
 
 const getJobsByWebhook = `-- name: GetJobsByWebhook :many
-SELECT id, webhook_id, api_key_id, prompt, context, claude_options, status, priority, retry_count, max_retries, worker_id, visibility_timeout, error_message, response, execution_time_ms, created_at, started_at, completed_at FROM job_queue
+SELECT id, webhook_id, api_key_id, prompt, job_status, priority, retry_count, max_retries, worker_id, visibility_timeout, error_message, response, execution_time_ms, created_at, started_at, completed_at, working_dir, max_thinking_tokens, max_turns, custom_system_prompt, append_system_prompt, allowed_tools, disallowed_tools, permission_mode, permission_prompt_tool_name, model, fallback_model, mcp_servers FROM job_queue
 WHERE webhook_id = ?
 ORDER BY created_at DESC
 LIMIT ?
@@ -209,9 +269,7 @@ func (q *Queries) GetJobsByWebhook(ctx context.Context, arg GetJobsByWebhookPara
 			&i.WebhookID,
 			&i.ApiKeyID,
 			&i.Prompt,
-			&i.Context,
-			&i.ClaudeOptions,
-			&i.Status,
+			&i.JobStatus,
 			&i.Priority,
 			&i.RetryCount,
 			&i.MaxRetries,
@@ -223,6 +281,18 @@ func (q *Queries) GetJobsByWebhook(ctx context.Context, arg GetJobsByWebhookPara
 			&i.CreatedAt,
 			&i.StartedAt,
 			&i.CompletedAt,
+			&i.WorkingDir,
+			&i.MaxThinkingTokens,
+			&i.MaxTurns,
+			&i.CustomSystemPrompt,
+			&i.AppendSystemPrompt,
+			&i.AllowedTools,
+			&i.DisallowedTools,
+			&i.PermissionMode,
+			&i.PermissionPromptToolName,
+			&i.Model,
+			&i.FallbackModel,
+			&i.McpServers,
 		); err != nil {
 			return nil, err
 		}
@@ -238,7 +308,7 @@ func (q *Queries) GetJobsByWebhook(ctx context.Context, arg GetJobsByWebhookPara
 }
 
 const getPendingJobCount = `-- name: GetPendingJobCount :one
-SELECT COUNT(*) as count FROM job_queue WHERE status = 'pending'
+SELECT COUNT(*) as count FROM job_queue WHERE job_status = 'pending'
 `
 
 func (q *Queries) GetPendingJobCount(ctx context.Context) (int64, error) {
@@ -249,7 +319,7 @@ func (q *Queries) GetPendingJobCount(ctx context.Context) (int64, error) {
 }
 
 const getRecentJobs = `-- name: GetRecentJobs :many
-SELECT id, webhook_id, api_key_id, prompt, context, claude_options, status, priority, retry_count, max_retries, worker_id, visibility_timeout, error_message, response, execution_time_ms, created_at, started_at, completed_at FROM job_queue
+SELECT id, webhook_id, api_key_id, prompt, job_status, priority, retry_count, max_retries, worker_id, visibility_timeout, error_message, response, execution_time_ms, created_at, started_at, completed_at, working_dir, max_thinking_tokens, max_turns, custom_system_prompt, append_system_prompt, allowed_tools, disallowed_tools, permission_mode, permission_prompt_tool_name, model, fallback_model, mcp_servers FROM job_queue
 ORDER BY created_at DESC
 LIMIT ?
 `
@@ -268,9 +338,7 @@ func (q *Queries) GetRecentJobs(ctx context.Context, limit int64) ([]JobQueue, e
 			&i.WebhookID,
 			&i.ApiKeyID,
 			&i.Prompt,
-			&i.Context,
-			&i.ClaudeOptions,
-			&i.Status,
+			&i.JobStatus,
 			&i.Priority,
 			&i.RetryCount,
 			&i.MaxRetries,
@@ -282,6 +350,18 @@ func (q *Queries) GetRecentJobs(ctx context.Context, limit int64) ([]JobQueue, e
 			&i.CreatedAt,
 			&i.StartedAt,
 			&i.CompletedAt,
+			&i.WorkingDir,
+			&i.MaxThinkingTokens,
+			&i.MaxTurns,
+			&i.CustomSystemPrompt,
+			&i.AppendSystemPrompt,
+			&i.AllowedTools,
+			&i.DisallowedTools,
+			&i.PermissionMode,
+			&i.PermissionPromptToolName,
+			&i.Model,
+			&i.FallbackModel,
+			&i.McpServers,
 		); err != nil {
 			return nil, err
 		}
@@ -299,10 +379,10 @@ func (q *Queries) GetRecentJobs(ctx context.Context, limit int64) ([]JobQueue, e
 const resetStaleJobs = `-- name: ResetStaleJobs :exec
 UPDATE job_queue
 SET 
-    status = 'pending',
+    job_status = 'pending',
     visibility_timeout = NULL,
     worker_id = NULL
-WHERE status = 'processing' 
+WHERE job_status = 'processing' 
   AND visibility_timeout < CURRENT_TIMESTAMP
 `
 

@@ -11,7 +11,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"github.com/upamune/claude-code-pull-worker/internal/db"
 	"github.com/upamune/claude-code-pull-worker/internal/models"
-	"github.com/upamune/claude-code-pull-worker/internal/types"
 )
 
 type WebhookExecutionHandler struct {
@@ -83,7 +82,13 @@ func (h *WebhookExecutionHandler) HandleWebhookExecution(w http.ResponseWriter, 
 	// If webhook has API keys configured, authentication is required
 	var apiKeyID *int64
 	if len(fullKeys) > 0 {
-		apiKey := r.Header.Get("X-API-Key")
+		// Extract Bearer token from Authorization header
+		authHeader := r.Header.Get("Authorization")
+		apiKey := ""
+		if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+			apiKey = strings.TrimPrefix(authHeader, "Bearer ")
+		}
+		
 		if apiKey == "" {
 			// Log missing API key attempt
 			go h.queries.LogSecurityAuditEvent(context.Background(), db.LogSecurityAuditEventParams{
@@ -92,10 +97,11 @@ func (h *WebhookExecutionHandler) HandleWebhookExecution(w http.ResponseWriter, 
 				ClientIp:       getClientIP(r),
 				UserAgent:      sql.NullString{String: r.Header.Get("User-Agent"), Valid: true},
 				ApiKeyProvided: sql.NullString{},
-				ErrorMessage:   sql.NullString{String: "API key required but not provided", Valid: true},
+				ErrorMessage:   sql.NullString{String: "Authorization header with Bearer token required but not provided", Valid: true},
 				RequestPath:    sql.NullString{String: r.URL.Path, Valid: true},
 			})
-			http.Error(w, "API key required", http.StatusUnauthorized)
+			w.Header().Set("WWW-Authenticate", "Bearer")
+			http.Error(w, "Authorization required", http.StatusUnauthorized)
 			return
 		}
 		
@@ -141,22 +147,7 @@ func (h *WebhookExecutionHandler) HandleWebhookExecution(w http.ResponseWriter, 
 		return
 	}
 	
-	// Parse Claude options
-	var claudeOpts types.ClaudeOptions
-	if claudeBytes, ok := webhook.ClaudeOptions.([]byte); ok {
-		if err := json.Unmarshal(claudeBytes, &claudeOpts); err != nil {
-			// Use default options if parsing fails
-			claudeOpts = types.ClaudeOptions{}
-		}
-	} else if claudeStr, ok := webhook.ClaudeOptions.(string); ok {
-		if err := json.Unmarshal([]byte(claudeStr), &claudeOpts); err != nil {
-			// Use default options if parsing fails
-			claudeOpts = types.ClaudeOptions{}
-		}
-	}
-	
-	// Enqueue the job
-	claudeOptsJSON, _ := json.Marshal(claudeOpts)
+	// Enqueue the job with Claude options from webhook
 	job, err := h.queries.EnqueueJob(ctx, db.EnqueueJobParams{
 		WebhookID:     webhookID,
 		ApiKeyID:      func() sql.NullInt64 {
@@ -165,10 +156,20 @@ func (h *WebhookExecutionHandler) HandleWebhookExecution(w http.ResponseWriter, 
 			}
 			return sql.NullInt64{}
 		}(),
-		Prompt:        req.Prompt,
-		Context:       sql.NullString{String: req.Context, Valid: req.Context != ""},
-		ClaudeOptions: sql.NullString{String: string(claudeOptsJSON), Valid: true},
-		Priority:      0, // Default priority
+		Prompt:                   req.Prompt,
+		Priority:                 0, // Default priority
+		WorkingDir:               webhook.WorkingDir,
+		MaxThinkingTokens:        webhook.MaxThinkingTokens,
+		MaxTurns:                 webhook.MaxTurns,
+		CustomSystemPrompt:       webhook.CustomSystemPrompt,
+		AppendSystemPrompt:       webhook.AppendSystemPrompt,
+		AllowedTools:             webhook.AllowedTools,
+		DisallowedTools:          webhook.DisallowedTools,
+		PermissionMode:           webhook.PermissionMode,
+		PermissionPromptToolName: webhook.PermissionPromptToolName,
+		Model:                    webhook.Model,
+		FallbackModel:            webhook.FallbackModel,
+		McpServers:               webhook.McpServers,
 	})
 	
 	if err != nil {

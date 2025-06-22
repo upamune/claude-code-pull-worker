@@ -99,7 +99,7 @@ sudo systemctl start claude-code-pull-worker
 ```bash
 curl -X POST https://your-tailscale-name.ts.net/webhooks/YOUR-UUID-HERE \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: claude_your-generated-api-key" \
+  -H "Authorization: Bearer claude_your-generated-api-key" \
   -d '{
     "prompt": "List all files in the current directory",
     "context": "Working in a Go project"

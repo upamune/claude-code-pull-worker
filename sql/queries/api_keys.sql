@@ -27,8 +27,19 @@ UPDATE api_keys SET is_active = 0 WHERE id = ?;
 SELECT 
     ak.*,
     w.name as webhook_name,
-    w.claude_options,
-    w.notification_config
+    w.notification_config,
+    w.working_dir,
+    w.max_thinking_tokens,
+    w.max_turns,
+    w.custom_system_prompt,
+    w.append_system_prompt,
+    w.allowed_tools,
+    w.disallowed_tools,
+    w.permission_mode,
+    w.permission_prompt_tool_name,
+    w.model,
+    w.fallback_model,
+    w.mcp_servers
 FROM api_keys ak
 JOIN webhooks w ON ak.webhook_id = w.id
 WHERE ak.key_hash = ? AND ak.is_active = 1 AND w.is_active = 1;

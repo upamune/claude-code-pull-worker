@@ -1,12 +1,25 @@
-.PHONY: build run test clean install-service
+.PHONY: build run test clean install-service migrate
+
+DB_FILE := claude-code-pull-worker.db
+SCHEMA_FILE := sql/schema.sql
 
 # Build the application
 build:
 	go build -o claude-code-pull-worker cmd/server/main.go
 
 # Run the application
-run:
+run: migrate
 	go run cmd/server/*.go
+
+# Apply database migrations using sqlite3def
+migrate:
+	@if [ ! -f $(DB_FILE) ]; then \
+		echo "Creating new database..."; \
+		touch $(DB_FILE); \
+	fi
+	sqlite3def -f $(SCHEMA_FILE) $(DB_FILE)
+	@echo "Applying seed data..."
+	@sqlite3 $(DB_FILE) < sql/seed.sql || true
 
 # Run tests
 test:

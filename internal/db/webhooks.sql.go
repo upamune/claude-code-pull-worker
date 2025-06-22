@@ -12,17 +12,35 @@ import (
 )
 
 const createWebhook = `-- name: CreateWebhook :one
-INSERT INTO webhooks (id, name, description, claude_options, notification_config)
-VALUES (?, ?, ?, ?, ?)
-RETURNING id, name, description, claude_options, notification_config, is_active, created_at, updated_at
+INSERT INTO webhooks (
+    id, name, description, notification_config,
+    working_dir, max_thinking_tokens, max_turns,
+    custom_system_prompt, append_system_prompt,
+    allowed_tools, disallowed_tools,
+    permission_mode, permission_prompt_tool_name,
+    model, fallback_model, mcp_servers
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, name, description, is_active, created_at, updated_at, working_dir, max_thinking_tokens, max_turns, custom_system_prompt, append_system_prompt, allowed_tools, disallowed_tools, permission_mode, permission_prompt_tool_name, model, fallback_model, mcp_servers, notification_config
 `
 
 type CreateWebhookParams struct {
-	ID                 string         `json:"id"`
-	Name               string         `json:"name"`
-	Description        sql.NullString `json:"description"`
-	ClaudeOptions      interface{}    `json:"claude_options"`
-	NotificationConfig interface{}    `json:"notification_config"`
+	ID                       string         `json:"id"`
+	Name                     string         `json:"name"`
+	Description              sql.NullString `json:"description"`
+	NotificationConfig       interface{}    `json:"notification_config"`
+	WorkingDir               sql.NullString `json:"working_dir"`
+	MaxThinkingTokens        sql.NullInt64  `json:"max_thinking_tokens"`
+	MaxTurns                 sql.NullInt64  `json:"max_turns"`
+	CustomSystemPrompt       sql.NullString `json:"custom_system_prompt"`
+	AppendSystemPrompt       sql.NullString `json:"append_system_prompt"`
+	AllowedTools             sql.NullString `json:"allowed_tools"`
+	DisallowedTools          sql.NullString `json:"disallowed_tools"`
+	PermissionMode           sql.NullString `json:"permission_mode"`
+	PermissionPromptToolName sql.NullString `json:"permission_prompt_tool_name"`
+	Model                    sql.NullString `json:"model"`
+	FallbackModel            sql.NullString `json:"fallback_model"`
+	McpServers               sql.NullString `json:"mcp_servers"`
 }
 
 func (q *Queries) CreateWebhook(ctx context.Context, arg CreateWebhookParams) (Webhook, error) {
@@ -30,19 +48,41 @@ func (q *Queries) CreateWebhook(ctx context.Context, arg CreateWebhookParams) (W
 		arg.ID,
 		arg.Name,
 		arg.Description,
-		arg.ClaudeOptions,
 		arg.NotificationConfig,
+		arg.WorkingDir,
+		arg.MaxThinkingTokens,
+		arg.MaxTurns,
+		arg.CustomSystemPrompt,
+		arg.AppendSystemPrompt,
+		arg.AllowedTools,
+		arg.DisallowedTools,
+		arg.PermissionMode,
+		arg.PermissionPromptToolName,
+		arg.Model,
+		arg.FallbackModel,
+		arg.McpServers,
 	)
 	var i Webhook
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Description,
-		&i.ClaudeOptions,
-		&i.NotificationConfig,
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.WorkingDir,
+		&i.MaxThinkingTokens,
+		&i.MaxTurns,
+		&i.CustomSystemPrompt,
+		&i.AppendSystemPrompt,
+		&i.AllowedTools,
+		&i.DisallowedTools,
+		&i.PermissionMode,
+		&i.PermissionPromptToolName,
+		&i.Model,
+		&i.FallbackModel,
+		&i.McpServers,
+		&i.NotificationConfig,
 	)
 	return i, err
 }
@@ -57,7 +97,7 @@ func (q *Queries) DeleteWebhook(ctx context.Context, id string) error {
 }
 
 const getWebhook = `-- name: GetWebhook :one
-SELECT id, name, description, claude_options, notification_config, is_active, created_at, updated_at FROM webhooks WHERE id = ? AND is_active = 1
+SELECT id, name, description, is_active, created_at, updated_at, working_dir, max_thinking_tokens, max_turns, custom_system_prompt, append_system_prompt, allowed_tools, disallowed_tools, permission_mode, permission_prompt_tool_name, model, fallback_model, mcp_servers, notification_config FROM webhooks WHERE id = ? AND is_active = 1
 `
 
 func (q *Queries) GetWebhook(ctx context.Context, id string) (Webhook, error) {
@@ -67,18 +107,29 @@ func (q *Queries) GetWebhook(ctx context.Context, id string) (Webhook, error) {
 		&i.ID,
 		&i.Name,
 		&i.Description,
-		&i.ClaudeOptions,
-		&i.NotificationConfig,
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.WorkingDir,
+		&i.MaxThinkingTokens,
+		&i.MaxTurns,
+		&i.CustomSystemPrompt,
+		&i.AppendSystemPrompt,
+		&i.AllowedTools,
+		&i.DisallowedTools,
+		&i.PermissionMode,
+		&i.PermissionPromptToolName,
+		&i.Model,
+		&i.FallbackModel,
+		&i.McpServers,
+		&i.NotificationConfig,
 	)
 	return i, err
 }
 
 const getWebhookWithStats = `-- name: GetWebhookWithStats :one
 SELECT 
-    w.id, w.name, w.description, w.claude_options, w.notification_config, w.is_active, w.created_at, w.updated_at,
+    w.id, w.name, w.description, w.is_active, w.created_at, w.updated_at, w.working_dir, w.max_thinking_tokens, w.max_turns, w.custom_system_prompt, w.append_system_prompt, w.allowed_tools, w.disallowed_tools, w.permission_mode, w.permission_prompt_tool_name, w.model, w.fallback_model, w.mcp_servers, w.notification_config,
     COUNT(DISTINCT ak.id) as api_key_count,
     COUNT(DISTINCT eh.id) as execution_count,
     MAX(eh.created_at) as last_execution
@@ -90,17 +141,28 @@ GROUP BY w.id
 `
 
 type GetWebhookWithStatsRow struct {
-	ID                 string         `json:"id"`
-	Name               string         `json:"name"`
-	Description        sql.NullString `json:"description"`
-	ClaudeOptions      interface{}    `json:"claude_options"`
-	NotificationConfig interface{}    `json:"notification_config"`
-	IsActive           bool           `json:"is_active"`
-	CreatedAt          time.Time      `json:"created_at"`
-	UpdatedAt          time.Time      `json:"updated_at"`
-	ApiKeyCount        int64          `json:"api_key_count"`
-	ExecutionCount     int64          `json:"execution_count"`
-	LastExecution      interface{}    `json:"last_execution"`
+	ID                       string         `json:"id"`
+	Name                     string         `json:"name"`
+	Description              sql.NullString `json:"description"`
+	IsActive                 bool           `json:"is_active"`
+	CreatedAt                time.Time      `json:"created_at"`
+	UpdatedAt                time.Time      `json:"updated_at"`
+	WorkingDir               sql.NullString `json:"working_dir"`
+	MaxThinkingTokens        sql.NullInt64  `json:"max_thinking_tokens"`
+	MaxTurns                 sql.NullInt64  `json:"max_turns"`
+	CustomSystemPrompt       sql.NullString `json:"custom_system_prompt"`
+	AppendSystemPrompt       sql.NullString `json:"append_system_prompt"`
+	AllowedTools             sql.NullString `json:"allowed_tools"`
+	DisallowedTools          sql.NullString `json:"disallowed_tools"`
+	PermissionMode           sql.NullString `json:"permission_mode"`
+	PermissionPromptToolName sql.NullString `json:"permission_prompt_tool_name"`
+	Model                    sql.NullString `json:"model"`
+	FallbackModel            sql.NullString `json:"fallback_model"`
+	McpServers               sql.NullString `json:"mcp_servers"`
+	NotificationConfig       interface{}    `json:"notification_config"`
+	ApiKeyCount              int64          `json:"api_key_count"`
+	ExecutionCount           int64          `json:"execution_count"`
+	LastExecution            interface{}    `json:"last_execution"`
 }
 
 func (q *Queries) GetWebhookWithStats(ctx context.Context, id string) (GetWebhookWithStatsRow, error) {
@@ -110,11 +172,22 @@ func (q *Queries) GetWebhookWithStats(ctx context.Context, id string) (GetWebhoo
 		&i.ID,
 		&i.Name,
 		&i.Description,
-		&i.ClaudeOptions,
-		&i.NotificationConfig,
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.WorkingDir,
+		&i.MaxThinkingTokens,
+		&i.MaxTurns,
+		&i.CustomSystemPrompt,
+		&i.AppendSystemPrompt,
+		&i.AllowedTools,
+		&i.DisallowedTools,
+		&i.PermissionMode,
+		&i.PermissionPromptToolName,
+		&i.Model,
+		&i.FallbackModel,
+		&i.McpServers,
+		&i.NotificationConfig,
 		&i.ApiKeyCount,
 		&i.ExecutionCount,
 		&i.LastExecution,
@@ -123,7 +196,7 @@ func (q *Queries) GetWebhookWithStats(ctx context.Context, id string) (GetWebhoo
 }
 
 const listWebhooks = `-- name: ListWebhooks :many
-SELECT id, name, description, claude_options, notification_config, is_active, created_at, updated_at FROM webhooks WHERE is_active = 1 ORDER BY created_at DESC
+SELECT id, name, description, is_active, created_at, updated_at, working_dir, max_thinking_tokens, max_turns, custom_system_prompt, append_system_prompt, allowed_tools, disallowed_tools, permission_mode, permission_prompt_tool_name, model, fallback_model, mcp_servers, notification_config FROM webhooks WHERE is_active = 1 ORDER BY created_at DESC
 `
 
 func (q *Queries) ListWebhooks(ctx context.Context) ([]Webhook, error) {
@@ -139,11 +212,22 @@ func (q *Queries) ListWebhooks(ctx context.Context) ([]Webhook, error) {
 			&i.ID,
 			&i.Name,
 			&i.Description,
-			&i.ClaudeOptions,
-			&i.NotificationConfig,
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.WorkingDir,
+			&i.MaxThinkingTokens,
+			&i.MaxTurns,
+			&i.CustomSystemPrompt,
+			&i.AppendSystemPrompt,
+			&i.AllowedTools,
+			&i.DisallowedTools,
+			&i.PermissionMode,
+			&i.PermissionPromptToolName,
+			&i.Model,
+			&i.FallbackModel,
+			&i.McpServers,
+			&i.NotificationConfig,
 		); err != nil {
 			return nil, err
 		}
@@ -160,24 +244,61 @@ func (q *Queries) ListWebhooks(ctx context.Context) ([]Webhook, error) {
 
 const updateWebhook = `-- name: UpdateWebhook :exec
 UPDATE webhooks 
-SET name = ?, description = ?, claude_options = ?, notification_config = ?, updated_at = CURRENT_TIMESTAMP
+SET name = ?, 
+    description = ?, 
+    notification_config = ?,
+    working_dir = ?,
+    max_thinking_tokens = ?,
+    max_turns = ?,
+    custom_system_prompt = ?,
+    append_system_prompt = ?,
+    allowed_tools = ?,
+    disallowed_tools = ?,
+    permission_mode = ?,
+    permission_prompt_tool_name = ?,
+    model = ?,
+    fallback_model = ?,
+    mcp_servers = ?,
+    updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 `
 
 type UpdateWebhookParams struct {
-	Name               string         `json:"name"`
-	Description        sql.NullString `json:"description"`
-	ClaudeOptions      interface{}    `json:"claude_options"`
-	NotificationConfig interface{}    `json:"notification_config"`
-	ID                 string         `json:"id"`
+	Name                     string         `json:"name"`
+	Description              sql.NullString `json:"description"`
+	NotificationConfig       interface{}    `json:"notification_config"`
+	WorkingDir               sql.NullString `json:"working_dir"`
+	MaxThinkingTokens        sql.NullInt64  `json:"max_thinking_tokens"`
+	MaxTurns                 sql.NullInt64  `json:"max_turns"`
+	CustomSystemPrompt       sql.NullString `json:"custom_system_prompt"`
+	AppendSystemPrompt       sql.NullString `json:"append_system_prompt"`
+	AllowedTools             sql.NullString `json:"allowed_tools"`
+	DisallowedTools          sql.NullString `json:"disallowed_tools"`
+	PermissionMode           sql.NullString `json:"permission_mode"`
+	PermissionPromptToolName sql.NullString `json:"permission_prompt_tool_name"`
+	Model                    sql.NullString `json:"model"`
+	FallbackModel            sql.NullString `json:"fallback_model"`
+	McpServers               sql.NullString `json:"mcp_servers"`
+	ID                       string         `json:"id"`
 }
 
 func (q *Queries) UpdateWebhook(ctx context.Context, arg UpdateWebhookParams) error {
 	_, err := q.db.ExecContext(ctx, updateWebhook,
 		arg.Name,
 		arg.Description,
-		arg.ClaudeOptions,
 		arg.NotificationConfig,
+		arg.WorkingDir,
+		arg.MaxThinkingTokens,
+		arg.MaxTurns,
+		arg.CustomSystemPrompt,
+		arg.AppendSystemPrompt,
+		arg.AllowedTools,
+		arg.DisallowedTools,
+		arg.PermissionMode,
+		arg.PermissionPromptToolName,
+		arg.Model,
+		arg.FallbackModel,
+		arg.McpServers,
 		arg.ID,
 	)
 	return err

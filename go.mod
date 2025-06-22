@@ -10,3 +10,5 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.28
 	golang.org/x/crypto v0.39.0
 )
+
+require github.com/upamune/claude-code-go v0.0.0-20250622103633-425a1b1d24ac // indirect

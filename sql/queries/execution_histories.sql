@@ -1,6 +1,6 @@
 -- name: CreateExecutionHistory :one
-INSERT INTO execution_histories (webhook_id, api_key_id, prompt, context, response, error, success, execution_time_ms)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO execution_histories (webhook_id, api_key_id, prompt, response, error, success, execution_time_ms)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: ListExecutionHistoriesByWebhook :many

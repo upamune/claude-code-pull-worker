@@ -10,18 +10,18 @@ import (
 )
 
 const getGlobalSetting = `-- name: GetGlobalSetting :one
-SELECT value FROM global_settings WHERE key = ?
+SELECT setting_value FROM global_settings WHERE setting_key = ?
 `
 
-func (q *Queries) GetGlobalSetting(ctx context.Context, key string) (interface{}, error) {
-	row := q.db.QueryRowContext(ctx, getGlobalSetting, key)
-	var value interface{}
-	err := row.Scan(&value)
-	return value, err
+func (q *Queries) GetGlobalSetting(ctx context.Context, settingKey string) (interface{}, error) {
+	row := q.db.QueryRowContext(ctx, getGlobalSetting, settingKey)
+	var setting_value interface{}
+	err := row.Scan(&setting_value)
+	return setting_value, err
 }
 
 const listGlobalSettings = `-- name: ListGlobalSettings :many
-SELECT "key", value, updated_at FROM global_settings ORDER BY key
+SELECT setting_key, setting_value, updated_at FROM global_settings ORDER BY setting_key
 `
 
 func (q *Queries) ListGlobalSettings(ctx context.Context) ([]GlobalSetting, error) {
@@ -33,7 +33,7 @@ func (q *Queries) ListGlobalSettings(ctx context.Context) ([]GlobalSetting, erro
 	items := []GlobalSetting{}
 	for rows.Next() {
 		var i GlobalSetting
-		if err := rows.Scan(&i.Key, &i.Value, &i.UpdatedAt); err != nil {
+		if err := rows.Scan(&i.SettingKey, &i.SettingValue, &i.UpdatedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -49,16 +49,16 @@ func (q *Queries) ListGlobalSettings(ctx context.Context) ([]GlobalSetting, erro
 
 const updateGlobalSetting = `-- name: UpdateGlobalSetting :exec
 UPDATE global_settings 
-SET value = ?, updated_at = CURRENT_TIMESTAMP
-WHERE key = ?
+SET setting_value = ?, updated_at = CURRENT_TIMESTAMP
+WHERE setting_key = ?
 `
 
 type UpdateGlobalSettingParams struct {
-	Value interface{} `json:"value"`
-	Key   string      `json:"key"`
+	SettingValue interface{} `json:"setting_value"`
+	SettingKey   string      `json:"setting_key"`
 }
 
 func (q *Queries) UpdateGlobalSetting(ctx context.Context, arg UpdateGlobalSettingParams) error {
-	_, err := q.db.ExecContext(ctx, updateGlobalSetting, arg.Value, arg.Key)
+	_, err := q.db.ExecContext(ctx, updateGlobalSetting, arg.SettingValue, arg.SettingKey)
 	return err
 }

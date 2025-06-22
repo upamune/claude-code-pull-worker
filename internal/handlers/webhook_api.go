@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"html/template"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,10 +16,21 @@ import (
 )
 
 type createWebhookRequest struct {
-	Name           string          `json:"name"`
-	Description    string          `json:"description"`
-	ClaudeOptions  json.RawMessage `json:"claude_options"`
-	NotificationConfig json.RawMessage `json:"notification_config"`
+	Name                     string          `json:"name"`
+	Description              string          `json:"description"`
+	NotificationConfig       json.RawMessage `json:"notification_config"`
+	WorkingDir               string          `json:"working_dir"`
+	MaxThinkingTokens        *int            `json:"max_thinking_tokens"`
+	MaxTurns                 *int            `json:"max_turns"`
+	CustomSystemPrompt       string          `json:"custom_system_prompt"`
+	AppendSystemPrompt       string          `json:"append_system_prompt"`
+	AllowedTools             string          `json:"allowed_tools"`
+	DisallowedTools          string          `json:"disallowed_tools"`
+	PermissionMode           string          `json:"permission_mode"`
+	PermissionPromptToolName string          `json:"permission_prompt_tool_name"`
+	Model                    string          `json:"model"`
+	FallbackModel            string          `json:"fallback_model"`
+	MCPServers               string          `json:"mcp_servers"`
 }
 
 func (h *AdminHandler) handleListWebhooks(w http.ResponseWriter, r *http.Request) {
@@ -47,15 +59,6 @@ func (h *AdminHandler) handleListWebhooks(w http.ResponseWriter, r *http.Request
 			"Name":           webhook.Name,
 			"Description":    webhook.Description,
 			"CreatedAt":      webhook.CreatedAt.Format("2006-01-02 15:04"),
-			"ClaudeOptions":  func() string {
-				if claudeBytes, ok := webhook.ClaudeOptions.([]byte); ok {
-					return string(claudeBytes)
-				}
-				if claudeStr, ok := webhook.ClaudeOptions.(string); ok {
-					return claudeStr
-				}
-				return "{}"
-			}(),
 			"APIKeyCount":    0,
 			"ExecutionCount": 0,
 			"LastExecution":  "Never",
@@ -91,18 +94,42 @@ func (h *AdminHandler) handleCreateWebhook(w http.ResponseWriter, r *http.Reques
 		
 		req.Name = r.FormValue("name")
 		req.Description = r.FormValue("description")
+		req.WorkingDir = r.FormValue("working_dir")
+		req.CustomSystemPrompt = r.FormValue("custom_system_prompt")
+		req.AppendSystemPrompt = r.FormValue("append_system_prompt")
+		req.AllowedTools = r.FormValue("allowed_tools")
+		req.DisallowedTools = r.FormValue("disallowed_tools")
+		req.PermissionMode = r.FormValue("permission_mode")
+		req.PermissionPromptToolName = r.FormValue("permission_prompt_tool_name")
+		req.Model = r.FormValue("model")
+		req.FallbackModel = r.FormValue("fallback_model")
+		req.MCPServers = r.FormValue("mcp_servers")
 		
-		// Parse JSON options
-		optionsStr := r.FormValue("claude_options")
-		if optionsStr == "" {
-			req.ClaudeOptions = json.RawMessage("{}")
-		} else {
-			req.ClaudeOptions = json.RawMessage(optionsStr)
+		// Parse integer fields
+		if val := r.FormValue("max_thinking_tokens"); val != "" {
+			if n, err := strconv.Atoi(val); err == nil {
+				req.MaxThinkingTokens = &n
+			}
+		}
+		if val := r.FormValue("max_turns"); val != "" {
+			if n, err := strconv.Atoi(val); err == nil {
+				req.MaxTurns = &n
+			}
 		}
 		
-		notifStr := r.FormValue("notification_config")
-		if notifStr != "" {
-			req.NotificationConfig = json.RawMessage(notifStr)
+		// Handle Discord webhook URL
+		discordWebhookURL := r.FormValue("discord_webhook_url")
+		if discordWebhookURL != "" {
+			notifConfig := map[string]interface{}{
+				"discord": map[string]string{
+					"webhook_url": discordWebhookURL,
+				},
+			}
+			jsonBytes, _ := json.Marshal(notifConfig)
+			req.NotificationConfig = json.RawMessage(jsonBytes)
+		} else {
+			// Use empty JSON if no webhook URL provided
+			req.NotificationConfig = json.RawMessage("{}")
 		}
 	} else {
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -116,11 +143,32 @@ func (h *AdminHandler) handleCreateWebhook(w http.ResponseWriter, r *http.Reques
 
 	// Create webhook
 	webhook, err := h.queries.CreateWebhook(r.Context(), db.CreateWebhookParams{
-		ID:            id,
-		Name:          req.Name,
-		Description:   sql.NullString{String: req.Description, Valid: req.Description != ""},
-		ClaudeOptions: req.ClaudeOptions,
-		NotificationConfig: req.NotificationConfig,
+		ID:                       id,
+		Name:                     req.Name,
+		Description:              sql.NullString{String: req.Description, Valid: req.Description != ""},
+		NotificationConfig:       req.NotificationConfig,
+		WorkingDir:               sql.NullString{String: req.WorkingDir, Valid: req.WorkingDir != ""},
+		MaxThinkingTokens:        func() sql.NullInt64 {
+			if req.MaxThinkingTokens != nil {
+				return sql.NullInt64{Int64: int64(*req.MaxThinkingTokens), Valid: true}
+			}
+			return sql.NullInt64{}
+		}(),
+		MaxTurns:                 func() sql.NullInt64 {
+			if req.MaxTurns != nil {
+				return sql.NullInt64{Int64: int64(*req.MaxTurns), Valid: true}
+			}
+			return sql.NullInt64{}
+		}(),
+		CustomSystemPrompt:       sql.NullString{String: req.CustomSystemPrompt, Valid: req.CustomSystemPrompt != ""},
+		AppendSystemPrompt:       sql.NullString{String: req.AppendSystemPrompt, Valid: req.AppendSystemPrompt != ""},
+		AllowedTools:             sql.NullString{String: req.AllowedTools, Valid: req.AllowedTools != ""},
+		DisallowedTools:          sql.NullString{String: req.DisallowedTools, Valid: req.DisallowedTools != ""},
+		PermissionMode:           sql.NullString{String: req.PermissionMode, Valid: req.PermissionMode != ""},
+		PermissionPromptToolName: sql.NullString{String: req.PermissionPromptToolName, Valid: req.PermissionPromptToolName != ""},
+		Model:                    sql.NullString{String: req.Model, Valid: req.Model != ""},
+		FallbackModel:            sql.NullString{String: req.FallbackModel, Valid: req.FallbackModel != ""},
+		McpServers:               sql.NullString{String: req.MCPServers, Valid: req.MCPServers != ""},
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -167,8 +215,43 @@ func (h *AdminHandler) handleUpdateWebhook(w http.ResponseWriter, r *http.Reques
 		
 		req.Name = r.FormValue("name")
 		req.Description = r.FormValue("description")
-		req.ClaudeOptions = json.RawMessage(r.FormValue("claude_options"))
-		req.NotificationConfig = json.RawMessage(r.FormValue("notification_config"))
+		req.WorkingDir = r.FormValue("working_dir")
+		req.CustomSystemPrompt = r.FormValue("custom_system_prompt")
+		req.AppendSystemPrompt = r.FormValue("append_system_prompt")
+		req.AllowedTools = r.FormValue("allowed_tools")
+		req.DisallowedTools = r.FormValue("disallowed_tools")
+		req.PermissionMode = r.FormValue("permission_mode")
+		req.PermissionPromptToolName = r.FormValue("permission_prompt_tool_name")
+		req.Model = r.FormValue("model")
+		req.FallbackModel = r.FormValue("fallback_model")
+		req.MCPServers = r.FormValue("mcp_servers")
+		
+		// Parse integer fields
+		if val := r.FormValue("max_thinking_tokens"); val != "" {
+			if n, err := strconv.Atoi(val); err == nil {
+				req.MaxThinkingTokens = &n
+			}
+		}
+		if val := r.FormValue("max_turns"); val != "" {
+			if n, err := strconv.Atoi(val); err == nil {
+				req.MaxTurns = &n
+			}
+		}
+		
+		// Handle Discord webhook URL
+		discordWebhookURL := r.FormValue("discord_webhook_url")
+		if discordWebhookURL != "" {
+			notifConfig := map[string]interface{}{
+				"discord": map[string]string{
+					"webhook_url": discordWebhookURL,
+				},
+			}
+			jsonBytes, _ := json.Marshal(notifConfig)
+			req.NotificationConfig = json.RawMessage(jsonBytes)
+		} else {
+			// Use empty JSON if no webhook URL provided
+			req.NotificationConfig = json.RawMessage("{}")
+		}
 	} else {
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -177,11 +260,32 @@ func (h *AdminHandler) handleUpdateWebhook(w http.ResponseWriter, r *http.Reques
 	}
 
 	err := h.queries.UpdateWebhook(r.Context(), db.UpdateWebhookParams{
-		Name:           req.Name,
-		Description:    sql.NullString{String: req.Description, Valid: req.Description != ""},
-		ClaudeOptions:  req.ClaudeOptions,
-		NotificationConfig: req.NotificationConfig,
-		ID:             vars["id"],
+		Name:                     req.Name,
+		Description:              sql.NullString{String: req.Description, Valid: req.Description != ""},
+		NotificationConfig:       req.NotificationConfig,
+		WorkingDir:               sql.NullString{String: req.WorkingDir, Valid: req.WorkingDir != ""},
+		MaxThinkingTokens:        func() sql.NullInt64 {
+			if req.MaxThinkingTokens != nil {
+				return sql.NullInt64{Int64: int64(*req.MaxThinkingTokens), Valid: true}
+			}
+			return sql.NullInt64{}
+		}(),
+		MaxTurns:                 func() sql.NullInt64 {
+			if req.MaxTurns != nil {
+				return sql.NullInt64{Int64: int64(*req.MaxTurns), Valid: true}
+			}
+			return sql.NullInt64{}
+		}(),
+		CustomSystemPrompt:       sql.NullString{String: req.CustomSystemPrompt, Valid: req.CustomSystemPrompt != ""},
+		AppendSystemPrompt:       sql.NullString{String: req.AppendSystemPrompt, Valid: req.AppendSystemPrompt != ""},
+		AllowedTools:             sql.NullString{String: req.AllowedTools, Valid: req.AllowedTools != ""},
+		DisallowedTools:          sql.NullString{String: req.DisallowedTools, Valid: req.DisallowedTools != ""},
+		PermissionMode:           sql.NullString{String: req.PermissionMode, Valid: req.PermissionMode != ""},
+		PermissionPromptToolName: sql.NullString{String: req.PermissionPromptToolName, Valid: req.PermissionPromptToolName != ""},
+		Model:                    sql.NullString{String: req.Model, Valid: req.Model != ""},
+		FallbackModel:            sql.NullString{String: req.FallbackModel, Valid: req.FallbackModel != ""},
+		McpServers:               sql.NullString{String: req.MCPServers, Valid: req.MCPServers != ""},
+		ID:                       vars["id"],
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

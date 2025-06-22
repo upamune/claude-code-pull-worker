@@ -14,7 +14,6 @@ import (
 	"github.com/upamune/claude-code-pull-worker/internal/models"
 	"github.com/upamune/claude-code-pull-worker/internal/notifier"
 	"github.com/upamune/claude-code-pull-worker/internal/notifier/discord"
-	"github.com/upamune/claude-code-pull-worker/internal/types"
 )
 
 type QueueWorker struct {
@@ -100,22 +99,8 @@ func (w *QueueWorker) processJob(ctx context.Context, job *db.JobQueue) error {
 		return fmt.Errorf("failed to get webhook: %w", err)
 	}
 	
-	// Parse Claude options
-	var claudeOpts types.ClaudeOptions
-	if job.ClaudeOptions.Valid {
-		if err := json.Unmarshal([]byte(job.ClaudeOptions.String), &claudeOpts); err != nil {
-			log.Printf("Failed to parse Claude options, using defaults: %v", err)
-		}
-	}
-	
-	// Build prompt
-	prompt := job.Prompt
-	if job.Context.Valid && job.Context.String != "" {
-		prompt = fmt.Sprintf("%s\n\nContext: %s", job.Prompt, job.Context.String)
-	}
-	
-	// Execute Claude
-	output, err := w.executeWithOptions(ctx, prompt, claudeOpts)
+	// Execute Claude with job options
+	output, err := w.executor.ExecuteWithOptions(ctx, job.Prompt, *job)
 	if err != nil {
 		return fmt.Errorf("Claude execution failed: %w", err)
 	}
@@ -135,7 +120,6 @@ func (w *QueueWorker) processJob(ctx context.Context, job *db.JobQueue) error {
 		WebhookID:       job.WebhookID,
 		ApiKeyID:        job.ApiKeyID,
 		Prompt:          job.Prompt,
-		Context:         job.Context,
 		Response:        sql.NullString{String: output, Valid: true},
 		Error:           sql.NullString{},
 		Success:         true,
@@ -152,11 +136,6 @@ func (w *QueueWorker) processJob(ctx context.Context, job *db.JobQueue) error {
 	return nil
 }
 
-func (w *QueueWorker) executeWithOptions(ctx context.Context, prompt string, opts types.ClaudeOptions) (string, error) {
-	// For now, use the basic executor
-	// Later this will use the Claude Code SDK with the provided options
-	return w.executor.Execute(prompt)
-}
 
 func (w *QueueWorker) sendJobNotification(ctx context.Context, job *db.JobQueue, response *string, err error, executionTime time.Duration) {
 	// Get webhook for notification config

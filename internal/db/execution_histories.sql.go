@@ -23,16 +23,15 @@ func (q *Queries) CountExecutionHistoriesByWebhook(ctx context.Context, webhookI
 }
 
 const createExecutionHistory = `-- name: CreateExecutionHistory :one
-INSERT INTO execution_histories (webhook_id, api_key_id, prompt, context, response, error, success, execution_time_ms)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, webhook_id, api_key_id, prompt, context, response, error, success, execution_time_ms, created_at
+INSERT INTO execution_histories (webhook_id, api_key_id, prompt, response, error, success, execution_time_ms)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+RETURNING id, webhook_id, api_key_id, prompt, response, error, success, execution_time_ms, created_at
 `
 
 type CreateExecutionHistoryParams struct {
 	WebhookID       string         `json:"webhook_id"`
 	ApiKeyID        sql.NullInt64  `json:"api_key_id"`
 	Prompt          string         `json:"prompt"`
-	Context         sql.NullString `json:"context"`
 	Response        sql.NullString `json:"response"`
 	Error           sql.NullString `json:"error"`
 	Success         bool           `json:"success"`
@@ -44,7 +43,6 @@ func (q *Queries) CreateExecutionHistory(ctx context.Context, arg CreateExecutio
 		arg.WebhookID,
 		arg.ApiKeyID,
 		arg.Prompt,
-		arg.Context,
 		arg.Response,
 		arg.Error,
 		arg.Success,
@@ -56,7 +54,6 @@ func (q *Queries) CreateExecutionHistory(ctx context.Context, arg CreateExecutio
 		&i.WebhookID,
 		&i.ApiKeyID,
 		&i.Prompt,
-		&i.Context,
 		&i.Response,
 		&i.Error,
 		&i.Success,
@@ -67,7 +64,7 @@ func (q *Queries) CreateExecutionHistory(ctx context.Context, arg CreateExecutio
 }
 
 const getExecutionHistory = `-- name: GetExecutionHistory :one
-SELECT id, webhook_id, api_key_id, prompt, context, response, error, success, execution_time_ms, created_at FROM execution_histories WHERE id = ?
+SELECT id, webhook_id, api_key_id, prompt, response, error, success, execution_time_ms, created_at FROM execution_histories WHERE id = ?
 `
 
 func (q *Queries) GetExecutionHistory(ctx context.Context, id int64) (ExecutionHistory, error) {
@@ -78,7 +75,6 @@ func (q *Queries) GetExecutionHistory(ctx context.Context, id int64) (ExecutionH
 		&i.WebhookID,
 		&i.ApiKeyID,
 		&i.Prompt,
-		&i.Context,
 		&i.Response,
 		&i.Error,
 		&i.Success,
@@ -116,7 +112,7 @@ func (q *Queries) GetExecutionStats(ctx context.Context, arg GetExecutionStatsPa
 }
 
 const listExecutionHistoriesByWebhook = `-- name: ListExecutionHistoriesByWebhook :many
-SELECT id, webhook_id, api_key_id, prompt, context, response, error, success, execution_time_ms, created_at FROM execution_histories 
+SELECT id, webhook_id, api_key_id, prompt, response, error, success, execution_time_ms, created_at FROM execution_histories 
 WHERE webhook_id = ?
 ORDER BY created_at DESC
 LIMIT ? OFFSET ?
@@ -142,7 +138,6 @@ func (q *Queries) ListExecutionHistoriesByWebhook(ctx context.Context, arg ListE
 			&i.WebhookID,
 			&i.ApiKeyID,
 			&i.Prompt,
-			&i.Context,
 			&i.Response,
 			&i.Error,
 			&i.Success,

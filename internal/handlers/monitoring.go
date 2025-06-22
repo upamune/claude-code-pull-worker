@@ -139,7 +139,7 @@ func (h *AdminHandler) handleListJobQueue(w http.ResponseWriter, r *http.Request
 	for _, job := range jobs {
 		data := map[string]interface{}{
 			"ID":          job.ID,
-			"Status":      job.Status,
+			"Status":      job.JobStatus,
 			"Prompt":      job.Prompt,
 			"Priority":    job.Priority,
 			"CreatedAt":   job.CreatedAt.Format("15:04:05"),

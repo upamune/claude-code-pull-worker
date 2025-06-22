@@ -83,26 +83,48 @@ const getAPIKeyWithWebhook = `-- name: GetAPIKeyWithWebhook :one
 SELECT 
     ak.id, ak.webhook_id, ak.key_hash, ak.key_prefix, ak.key_suffix, ak.description, ak.is_active, ak.created_at, ak.last_used_at,
     w.name as webhook_name,
-    w.claude_options,
-    w.notification_config
+    w.notification_config,
+    w.working_dir,
+    w.max_thinking_tokens,
+    w.max_turns,
+    w.custom_system_prompt,
+    w.append_system_prompt,
+    w.allowed_tools,
+    w.disallowed_tools,
+    w.permission_mode,
+    w.permission_prompt_tool_name,
+    w.model,
+    w.fallback_model,
+    w.mcp_servers
 FROM api_keys ak
 JOIN webhooks w ON ak.webhook_id = w.id
 WHERE ak.key_hash = ? AND ak.is_active = 1 AND w.is_active = 1
 `
 
 type GetAPIKeyWithWebhookRow struct {
-	ID                 int64          `json:"id"`
-	WebhookID          string         `json:"webhook_id"`
-	KeyHash            string         `json:"key_hash"`
-	KeyPrefix          string         `json:"key_prefix"`
-	KeySuffix          string         `json:"key_suffix"`
-	Description        sql.NullString `json:"description"`
-	IsActive           bool           `json:"is_active"`
-	CreatedAt          time.Time      `json:"created_at"`
-	LastUsedAt         sql.NullTime   `json:"last_used_at"`
-	WebhookName        string         `json:"webhook_name"`
-	ClaudeOptions      interface{}    `json:"claude_options"`
-	NotificationConfig interface{}    `json:"notification_config"`
+	ID                       int64          `json:"id"`
+	WebhookID                string         `json:"webhook_id"`
+	KeyHash                  string         `json:"key_hash"`
+	KeyPrefix                string         `json:"key_prefix"`
+	KeySuffix                string         `json:"key_suffix"`
+	Description              sql.NullString `json:"description"`
+	IsActive                 bool           `json:"is_active"`
+	CreatedAt                time.Time      `json:"created_at"`
+	LastUsedAt               sql.NullTime   `json:"last_used_at"`
+	WebhookName              string         `json:"webhook_name"`
+	NotificationConfig       interface{}    `json:"notification_config"`
+	WorkingDir               sql.NullString `json:"working_dir"`
+	MaxThinkingTokens        sql.NullInt64  `json:"max_thinking_tokens"`
+	MaxTurns                 sql.NullInt64  `json:"max_turns"`
+	CustomSystemPrompt       sql.NullString `json:"custom_system_prompt"`
+	AppendSystemPrompt       sql.NullString `json:"append_system_prompt"`
+	AllowedTools             sql.NullString `json:"allowed_tools"`
+	DisallowedTools          sql.NullString `json:"disallowed_tools"`
+	PermissionMode           sql.NullString `json:"permission_mode"`
+	PermissionPromptToolName sql.NullString `json:"permission_prompt_tool_name"`
+	Model                    sql.NullString `json:"model"`
+	FallbackModel            sql.NullString `json:"fallback_model"`
+	McpServers               sql.NullString `json:"mcp_servers"`
 }
 
 func (q *Queries) GetAPIKeyWithWebhook(ctx context.Context, keyHash string) (GetAPIKeyWithWebhookRow, error) {
@@ -119,8 +141,19 @@ func (q *Queries) GetAPIKeyWithWebhook(ctx context.Context, keyHash string) (Get
 		&i.CreatedAt,
 		&i.LastUsedAt,
 		&i.WebhookName,
-		&i.ClaudeOptions,
 		&i.NotificationConfig,
+		&i.WorkingDir,
+		&i.MaxThinkingTokens,
+		&i.MaxTurns,
+		&i.CustomSystemPrompt,
+		&i.AppendSystemPrompt,
+		&i.AllowedTools,
+		&i.DisallowedTools,
+		&i.PermissionMode,
+		&i.PermissionPromptToolName,
+		&i.Model,
+		&i.FallbackModel,
+		&i.McpServers,
 	)
 	return i, err
 }
