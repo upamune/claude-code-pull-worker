@@ -1,0 +1,39 @@
+<tr class="hover:bg-gray-50">
+    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+        #{{ .ID }}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+            {{ if eq .Status "pending" }}bg-yellow-100 text-yellow-800{{ else if eq .Status "processing" }}bg-blue-100 text-blue-800{{ else if eq .Status "completed" }}bg-green-100 text-green-800{{ else if eq .Status "failed" }}bg-red-100 text-red-800{{ else }}bg-gray-100 text-gray-800{{ end }}">
+            {{ .Status }}
+        </span>
+    </td>
+    <td class="px-6 py-4 text-sm text-gray-500">
+        <div class="max-w-md truncate" title="{{ .Prompt }}">
+            {{ .Prompt }}
+        </div>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+            {{ if eq .Priority 0 }}bg-gray-100 text-gray-800{{ else if eq .Priority 1 }}bg-yellow-100 text-yellow-800{{ else }}bg-red-100 text-red-800{{ end }}">
+            Priority: {{ .Priority }}
+        </span>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {{ .CreatedAt }}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {{ if .StartedAt.Valid }}
+            {{ .StartedAt.Time }}
+        {{ else }}
+            <span class="text-gray-400">-</span>
+        {{ end }}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {{ if .CompletedAt.Valid }}
+            {{ .CompletedAt.Time }}
+        {{ else }}
+            <span class="text-gray-400">-</span>
+        {{ end }}
+    </td>
+</tr>

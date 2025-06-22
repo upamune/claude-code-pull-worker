@@ -1,0 +1,29 @@
+<tr class="hover:bg-gray-50">
+    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+        {{ .CreatedAt }}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+            {{ if eq .EventType "missing_api_key" }}bg-red-100 text-red-800{{ else if eq .EventType "invalid_api_key" }}bg-orange-100 text-orange-800{{ else }}bg-gray-100 text-gray-800{{ end }}">
+            {{ .EventType }}
+        </span>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {{ .ClientIP }}
+    </td>
+    <td class="px-6 py-4 text-sm text-gray-500">
+        <div class="max-w-xs truncate" title="{{ .UserAgent }}">
+            {{ .UserAgent }}
+        </div>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {{ if .APIKeyProvided }}
+            <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">{{ .APIKeyProvided }}</code>
+        {{ else }}
+            <span class="text-gray-400">-</span>
+        {{ end }}
+    </td>
+    <td class="px-6 py-4 text-sm text-gray-500">
+        {{ .ErrorMessage }}
+    </td>
+</tr>

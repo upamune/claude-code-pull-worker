@@ -1,0 +1,116 @@
+<div class="bg-white rounded-lg shadow p-6 mb-4" x-data="{ showKeys: false, showDetails: false, showNewKeyModal: false }" data-webhook-id="{{.ID}}">
+    <div class="flex justify-between items-start">
+        <div class="flex-1">
+            <h3 class="text-lg font-semibold">
+                <a href="/webhooks/{{.ID}}" class="text-blue-600 hover:text-blue-800">{{.Name}}</a>
+            </h3>
+            <p class="text-gray-600 text-sm mt-1">{{.Description}}</p>
+            <div class="mt-2">
+                <code class="bg-gray-100 px-2 py-1 rounded text-sm">/webhooks/{{.ID}}</code>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <a href="/webhooks/{{.ID}}" 
+                class="text-green-600 hover:text-green-800 text-sm font-medium">
+                View Full Details →
+            </a>
+            <button @click="showDetails = !showDetails" 
+                class="text-blue-600 hover:text-blue-800 text-sm">
+                Quick Info
+            </button>
+            <button @click="showKeys = !showKeys" 
+                class="text-blue-600 hover:text-blue-800 text-sm">
+                API Keys
+            </button>
+            <button hx-delete="/api/webhooks/{{.ID}}" 
+                hx-confirm="Are you sure you want to delete this webhook?"
+                hx-target="closest div"
+                hx-swap="outerHTML"
+                class="text-red-600 hover:text-red-800 text-sm">
+                Delete
+            </button>
+        </div>
+    </div>
+
+    <!-- Details Section -->
+    <div x-show="showDetails" x-collapse class="mt-4 pt-4 border-t">
+        <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+                <span class="font-medium">Created:</span> {{.CreatedAt}}
+            </div>
+            <div>
+                <span class="font-medium">Last Execution:</span> {{.LastExecution}}
+            </div>
+            <div>
+                <span class="font-medium">Total Executions:</span> {{.ExecutionCount}}
+            </div>
+            <div>
+                <span class="font-medium">API Keys:</span> {{.APIKeyCount}}
+            </div>
+        </div>
+        <div class="mt-4">
+            <span class="font-medium text-sm">Claude Options:</span>
+            <pre class="bg-gray-100 p-2 rounded mt-1 text-xs overflow-x-auto">{{.ClaudeOptions}}</pre>
+        </div>
+        <div class="mt-4">
+            <span class="font-medium text-sm">使用例 (curl):</span>
+            <pre class="bg-gray-900 text-gray-100 p-3 rounded mt-1 text-xs overflow-x-auto font-mono">curl -X POST http://localhost:8081/webhooks/{{.ID}} \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Hello, Claude!",
+    "context": "Optional context here"
+  }'</pre>
+        </div>
+    </div>
+
+    <!-- API Keys Section -->
+    <div x-show="showKeys" x-collapse class="mt-4 pt-4 border-t">
+        <div class="flex justify-between items-center mb-3">
+            <h4 class="font-medium">API Keys</h4>
+            <button @click="showNewKeyModal = true"
+                class="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">
+                New Key
+            </button>
+        </div>
+        <div hx-get="/api/webhooks/{{.ID}}/keys" hx-trigger="revealed" hx-swap="innerHTML">
+            <div class="text-gray-500 text-sm">Loading...</div>
+        </div>
+
+        <!-- New API Key Modal -->
+        <div x-show="showNewKeyModal" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             @click.self="showNewKeyModal = false"
+             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+             style="display: none;">
+            <div class="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4" @click.stop>
+                <h3 class="text-lg font-bold mb-4">Create New API Key</h3>
+                <form hx-post="/api/webhooks/{{.ID}}/keys" 
+                      hx-target="[hx-get='/api/webhooks/{{.ID}}/keys']" 
+                      hx-swap="innerHTML"
+                      @htmx:after-request="if($event.detail.successful) showNewKeyModal = false">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <input type="text" name="description" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="flex justify-end gap-3">
+                        <button type="button" @click="showNewKeyModal = false"
+                            class="px-4 py-2 text-gray-700 hover:text-gray-900">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                            class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
+                            Create
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

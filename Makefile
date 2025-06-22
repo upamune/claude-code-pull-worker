@@ -1,0 +1,58 @@
+.PHONY: build run test clean install-service
+
+# Build the application
+build:
+	go build -o claude-code-pull-worker cmd/server/main.go
+
+# Run the application
+run:
+	go run cmd/server/*.go
+
+# Run tests
+test:
+	go test ./...
+
+# Clean build artifacts
+clean:
+	rm -f claude-code-pull-worker
+
+# Install dependencies
+deps:
+	go mod download
+
+# Generate systemd service file
+systemd-gen:
+	./claude-code-pull-worker systemd-install --user=$(USER) --working-dir=$(PWD)
+
+# Install as systemd service (requires sudo)
+install-service:
+	@echo "Installing systemd service..."
+	@echo "Please run: sudo make install-service-root"
+
+install-service-root:
+	cp claude-code-pull-worker.service /etc/systemd/system/
+	systemctl daemon-reload
+	systemctl enable claude-code-pull-worker
+	@echo "Service installed. Start with: systemctl start claude-code-pull-worker"
+
+# Development with auto-reload (requires air)
+dev:
+	@if command -v air > /dev/null; then \
+		air; \
+	else \
+		echo "Please install air first: go install github.com/cosmtrek/air@latest"; \
+		exit 1; \
+	fi
+
+# Format code
+fmt:
+	go fmt ./...
+
+# Lint code (requires golangci-lint)
+lint:
+	@if command -v golangci-lint > /dev/null; then \
+		golangci-lint run; \
+	else \
+		echo "Please install golangci-lint first: https://golangci-lint.run/usage/install/"; \
+		exit 1; \
+	fi

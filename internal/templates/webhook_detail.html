@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webhook Detail - Claude Code Pull Worker</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-6">
+                    <div>
+                        <a href="/" class="text-blue-600 hover:text-blue-800 text-sm mb-2 inline-block">← Back to Dashboard</a>
+                        <h1 class="text-3xl font-bold text-gray-900">{{.Name}}</h1>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Webhook Info -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500">Endpoint URL</h3>
+                        <p class="mt-1"><code class="bg-gray-100 px-2 py-1 rounded">/webhooks/{{.ID}}</code></p>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500">Description</h3>
+                        <p class="mt-1">{{.Description}}</p>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500">Created</h3>
+                        <p class="mt-1">{{.CreatedAt}}</p>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500">Status</h3>
+                        <p class="mt-1">
+                            {{if .IsActive}}
+                                <span class="text-green-600">Active</span>
+                            {{else}}
+                                <span class="text-red-600">Inactive</span>
+                            {{end}}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div x-data="{ activeTab: 'executions' }" class="mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-8">
+                        <button @click="activeTab = 'executions'"
+                            :class="activeTab === 'executions' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="py-2 px-1 border-b-2 font-medium text-sm">
+                            Execution History
+                        </button>
+                        <button @click="activeTab = 'queue'"
+                            :class="activeTab === 'queue' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="py-2 px-1 border-b-2 font-medium text-sm">
+                            Job Queue
+                        </button>
+                        <button @click="activeTab = 'security'"
+                            :class="activeTab === 'security' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="py-2 px-1 border-b-2 font-medium text-sm">
+                            Security Logs
+                        </button>
+                        <button @click="activeTab = 'settings'"
+                            :class="activeTab === 'settings' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="py-2 px-1 border-b-2 font-medium text-sm">
+                            Settings
+                        </button>
+                        <button @click="activeTab = 'stats'"
+                            :class="activeTab === 'stats' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="py-2 px-1 border-b-2 font-medium text-sm">
+                            Statistics
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Tab Contents -->
+                <div class="mt-6">
+                    <!-- Execution History Tab -->
+                    <div x-show="activeTab === 'executions'" 
+                        hx-get="/api/webhooks/{{.ID}}/executions" 
+                        hx-trigger="revealed" 
+                        hx-swap="innerHTML">
+                        <div class="animate-pulse">
+                            <div class="h-20 bg-gray-200 rounded mb-4"></div>
+                            <div class="h-20 bg-gray-200 rounded mb-4"></div>
+                        </div>
+                    </div>
+
+                    <!-- Job Queue Tab -->
+                    <div x-show="activeTab === 'queue'" 
+                        hx-get="/api/webhooks/{{.ID}}/queue" 
+                        hx-trigger="revealed, every 5s" 
+                        hx-swap="innerHTML">
+                        <div class="animate-pulse">
+                            <div class="h-20 bg-gray-200 rounded mb-4"></div>
+                            <div class="h-20 bg-gray-200 rounded mb-4"></div>
+                        </div>
+                    </div>
+
+                    <!-- Security Logs Tab -->
+                    <div x-show="activeTab === 'security'" 
+                        hx-get="/api/webhooks/{{.ID}}/security-logs" 
+                        hx-trigger="revealed" 
+                        hx-swap="innerHTML">
+                        <div class="animate-pulse">
+                            <div class="h-20 bg-gray-200 rounded mb-4"></div>
+                            <div class="h-20 bg-gray-200 rounded mb-4"></div>
+                        </div>
+                    </div>
+
+                    <!-- Settings Tab -->
+                    <div x-show="activeTab === 'settings'">
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <form hx-put="/api/webhooks/{{.ID}}" hx-swap="none">
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                                    <input type="text" name="name" value="{{.Name}}" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                    <textarea name="description" rows="3"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">{{.Description}}</textarea>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Claude Options (JSON)</label>
+                                    <textarea name="claude_options" rows="10"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">{{.ClaudeOptions}}</textarea>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Notification Config (JSON)</label>
+                                    <textarea name="notification_config" rows="5"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">{{.NotificationConfig}}</textarea>
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
+                                        Update Settings
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Tab -->
+                    <div x-show="activeTab === 'stats'" 
+                        hx-get="/api/webhooks/{{.ID}}/stats" 
+                        hx-trigger="revealed" 
+                        hx-swap="innerHTML">
+                        <div class="animate-pulse">
+                            <div class="h-40 bg-gray-200 rounded"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
