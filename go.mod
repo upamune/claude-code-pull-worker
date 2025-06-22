@@ -11,4 +11,4 @@ require (
 	golang.org/x/crypto v0.39.0
 )
 
-require github.com/upamune/claude-code-go v0.0.0-20250622103633-425a1b1d24ac // indirect
+require github.com/upamune/claude-code-go v0.0.3

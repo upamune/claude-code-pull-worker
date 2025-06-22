@@ -31,3 +31,7 @@ claude-code-pull-worker
 .vscode/
 *.swp
 *.swo
+
+*.db
+*.db.wal
+

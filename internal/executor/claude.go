@@ -52,14 +52,15 @@ func (e *ClaudeExecutor) ExecuteWithOptions(ctx context.Context, prompt string, 
 	if job.PermissionMode.Valid && job.PermissionMode.String != "" {
 		switch job.PermissionMode.String {
 		case "allow":
-			opts.PermissionMode = claude.PermissionAllow
+			opts.PermissionMode = claude.PermissionBypassPermissions
 		case "ask":
-			opts.PermissionMode = claude.PermissionAsk
+			opts.PermissionMode = claude.PermissionDefault
 		case "deny":
-			opts.PermissionMode = claude.PermissionDeny
-		// "auto" and "review" are not supported by the library, default to ask
+			// deny is not directly supported, use default with caution
+			opts.PermissionMode = claude.PermissionDefault
+		// "auto" and "review" are not supported by the library, default to default
 		case "auto", "review":
-			opts.PermissionMode = claude.PermissionAsk
+			opts.PermissionMode = claude.PermissionDefault
 		}
 	}
 
