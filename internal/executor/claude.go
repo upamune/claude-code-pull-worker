@@ -55,12 +55,6 @@ func (e *ClaudeExecutor) ExecuteWithOptions(ctx context.Context, prompt string, 
 			opts.PermissionMode = claude.PermissionBypassPermissions
 		case "ask":
 			opts.PermissionMode = claude.PermissionDefault
-		case "deny":
-			// deny is not directly supported, use default with caution
-			opts.PermissionMode = claude.PermissionDefault
-		// "auto" and "review" are not supported by the library, default to default
-		case "auto", "review":
-			opts.PermissionMode = claude.PermissionDefault
 		}
 	}
 

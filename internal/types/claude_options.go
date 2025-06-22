@@ -4,11 +4,8 @@ package types
 type PermissionMode string
 
 const (
-	PermissionModeAuto   PermissionMode = "auto"
-	PermissionModeAllow  PermissionMode = "allow"
-	PermissionModeAsk    PermissionMode = "ask"
-	PermissionModeDeny   PermissionMode = "deny"
-	PermissionModeReview PermissionMode = "review"
+	PermissionModeAllow PermissionMode = "allow"
+	PermissionModeAsk   PermissionMode = "ask"
 )
 
 // MCPStdioServerConfig configures an MCP stdio server

@@ -67,7 +67,7 @@
              @click.self="showNewWebhookModal = false"
              class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
              style="display: none;">
-            <div class="bg-white p-6 rounded-lg shadow-xl max-w-2xl w-full mx-4" @click.stop>
+            <div class="bg-white p-6 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" @click.stop>
                 <h3 class="text-xl font-bold mb-4">Create New Webhook</h3>
                 <form hx-post="/api/webhooks" hx-target="#webhooks-list" hx-swap="innerHTML">
                     <div class="mb-4">
@@ -80,6 +80,86 @@
                         <textarea name="description" rows="3"
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                     </div>
+                    
+                    <!-- Claude Options -->
+                    <div class="mb-6 border-t pt-4">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Claude Options (Optional)</h4>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Working Directory</label>
+                                <input type="text" name="working_dir"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Model</label>
+                                <input type="text" name="model" placeholder="e.g., claude-3-5-sonnet-20241022"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Fallback Model</label>
+                                <input type="text" name="fallback_model"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Max Thinking Tokens</label>
+                                <input type="number" name="max_thinking_tokens"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Max Turns</label>
+                                <input type="number" name="max_turns"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Permission Mode</label>
+                                <select name="permission_mode" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Default</option>
+                                    <option value="allow">Allow</option>
+                                    <option value="ask">Ask</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Permission Prompt Tool Name</label>
+                            <input type="text" name="permission_prompt_tool_name"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div class="mt-4 grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Allowed Tools (comma-separated)</label>
+                                <input type="text" name="allowed_tools" placeholder="e.g., Bash, Read, Write"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Disallowed Tools (comma-separated)</label>
+                                <input type="text" name="disallowed_tools"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Notification Settings -->
+                    <div class="mb-6 border-t pt-4">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Notification Settings (Optional)</h4>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Discord Webhook URL</label>
+                            <input type="url" name="discord_webhook_url"
+                                placeholder="https://discord.com/api/webhooks/..."
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <p class="mt-1 text-sm text-gray-500">Leave empty to use global default</p>
+                        </div>
+                    </div>
+                    
                     <div class="flex justify-end gap-3">
                         <button type="button" @click="showNewWebhookModal = false"
                             class="px-4 py-2 text-gray-700 hover:text-gray-900">

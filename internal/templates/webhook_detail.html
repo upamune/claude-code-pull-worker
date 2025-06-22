@@ -172,11 +172,9 @@
                                             <label class="block text-sm font-medium text-gray-700 mb-2">Permission Mode</label>
                                             <select name="permission_mode" 
                                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                                <option value="auto" {{if eq .PermissionMode "auto"}}selected{{end}}>Auto</option>
+                                                <option value="" {{if eq .PermissionMode ""}}selected{{end}}>Default</option>
                                                 <option value="allow" {{if eq .PermissionMode "allow"}}selected{{end}}>Allow</option>
                                                 <option value="ask" {{if eq .PermissionMode "ask"}}selected{{end}}>Ask</option>
-                                                <option value="deny" {{if eq .PermissionMode "deny"}}selected{{end}}>Deny</option>
-                                                <option value="review" {{if eq .PermissionMode "review"}}selected{{end}}>Review</option>
                                             </select>
                                         </div>
                                     </div>
