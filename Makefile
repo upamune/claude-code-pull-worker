@@ -5,7 +5,11 @@ SCHEMA_FILE := sql/schema.sql
 
 # Build the application
 build:
-	go build -o claude-code-pull-worker cmd/server/main.go
+	go build -o claude-code-pull-worker cmd/server/*.go
+
+# Build for Linux AMD64
+build-linux-amd64:
+	GOOS=linux GOARCH=amd64 go build -o claude-code-pull-worker-linux-amd64 cmd/server/*.go
 
 # Run the application
 run: migrate

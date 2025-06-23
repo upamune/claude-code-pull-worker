@@ -35,3 +35,4 @@ claude-code-pull-worker
 *.db
 *.db.wal
 
+claude-code-pull-worker-linux-amd64
