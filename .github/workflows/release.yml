@@ -2,6 +2,8 @@ name: Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
 
@@ -27,68 +29,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             gcc-x86-64-linux-gnu \
-            g++-x86-64-linux-gnu \
-            gcc-aarch64-linux-gnu \
-            g++-aarch64-linux-gnu
+            g++-x86-64-linux-gnu
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: latest
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build-darwin:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.24'
-
-      - name: Get version
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-
-      - name: Build for macOS
-        run: |
-          # macOS AMD64
-          CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build \
-            -trimpath \
-            -ldflags="-s -w -X main.version=${{ steps.get_version.outputs.VERSION }}" \
-            -o claude-code-pull-worker \
-            ./cmd/server
-          
-          mkdir -p dist
-          tar czf dist/claude-code-pull-worker_${{ steps.get_version.outputs.VERSION }}_darwin_amd64.tar.gz \
-            claude-code-pull-worker \
-            README.md \
-            sql/ \
-            internal/templates/html/
-          
-          # macOS ARM64
-          CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build \
-            -trimpath \
-            -ldflags="-s -w -X main.version=${{ steps.get_version.outputs.VERSION }}" \
-            -o claude-code-pull-worker \
-            ./cmd/server
-          
-          tar czf dist/claude-code-pull-worker_${{ steps.get_version.outputs.VERSION }}_darwin_arm64.tar.gz \
-            claude-code-pull-worker \
-            README.md \
-            sql/ \
-            internal/templates/html/
-
-      - name: Upload to release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*.tar.gz
+          args: ${{ startsWith(github.ref, 'refs/tags/') && 'release --clean' || 'build --snapshot --clean' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

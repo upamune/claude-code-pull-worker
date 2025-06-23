@@ -22,25 +22,6 @@ builds:
       - -X main.version={{.Version}}
       - -X main.commit={{.Commit}}
       - -X main.date={{.Date}}
-  
-  - id: linux-arm64
-    main: ./cmd/server
-    binary: claude-code-pull-worker
-    env:
-      - CGO_ENABLED=1
-      - CC=aarch64-linux-gnu-gcc
-      - CXX=aarch64-linux-gnu-g++
-    goos:
-      - linux
-    goarch:
-      - arm64
-    flags:
-      - -trimpath
-    ldflags:
-      - -s -w
-      - -X main.version={{.Version}}
-      - -X main.commit={{.Commit}}
-      - -X main.date={{.Date}}
 
 archives:
   - id: default
@@ -85,15 +66,6 @@ release:
     ### インストール
 
     ```bash
-    # macOS (Apple Silicon)
-    curl -L https://github.com/upamune/claude-code-pull-worker/releases/download/{{ .Tag }}/claude-code-pull-worker_{{ .Version }}_darwin_arm64.tar.gz | tar xz
-
-    # macOS (Intel)
-    curl -L https://github.com/upamune/claude-code-pull-worker/releases/download/{{ .Tag }}/claude-code-pull-worker_{{ .Version }}_darwin_amd64.tar.gz | tar xz
-
     # Linux (AMD64)
     curl -L https://github.com/upamune/claude-code-pull-worker/releases/download/{{ .Tag }}/claude-code-pull-worker_{{ .Version }}_linux_amd64.tar.gz | tar xz
-
-    # Linux (ARM64)
-    curl -L https://github.com/upamune/claude-code-pull-worker/releases/download/{{ .Tag }}/claude-code-pull-worker_{{ .Version }}_linux_arm64.tar.gz | tar xz
     ```
