@@ -29,6 +29,7 @@ type Querier interface {
 	GetGlobalSetting(ctx context.Context, settingKey string) (interface{}, error)
 	GetJobStatus(ctx context.Context, id int64) (JobQueue, error)
 	GetJobsByWebhook(ctx context.Context, arg GetJobsByWebhookParams) ([]JobQueue, error)
+	GetLastExecution(ctx context.Context, webhookID string) (ExecutionHistory, error)
 	GetPendingJobCount(ctx context.Context) (int64, error)
 	GetRecentJobs(ctx context.Context, limit int64) ([]JobQueue, error)
 	GetRecentSecurityAuditLogs(ctx context.Context, limit int64) ([]SecurityAuditLog, error)

@@ -13,11 +13,13 @@ import (
 
 type ClaudeExecutor struct {
 	timeout time.Duration
+	queries *db.Queries
 }
 
-func NewClaudeExecutor(timeout time.Duration) *ClaudeExecutor {
+func NewClaudeExecutor(timeout time.Duration, queries *db.Queries) *ClaudeExecutor {
 	return &ClaudeExecutor{
 		timeout: timeout,
+		queries: queries,
 	}
 }
 
@@ -63,6 +65,24 @@ func (e *ClaudeExecutor) ExecuteWithOptions(ctx context.Context, prompt string, 
 	}
 
 	// TODO: Parse MCP servers from job.McpServers if needed
+
+	// Handle --continue flag based on last execution time
+	if job.EnableContinue && e.queries != nil {
+		lastExecution, err := e.queries.GetLastExecution(ctx, job.WebhookID)
+		if err == nil {
+			// Check if last execution was within the specified time window
+			minutesSinceLastExecution := time.Since(lastExecution.CreatedAt).Minutes()
+			if minutesSinceLastExecution <= float64(job.ContinueMinutes) {
+				opts.Continue = true
+				fmt.Printf("Enabling --continue flag (last execution was %.1f minutes ago)\n", minutesSinceLastExecution)
+			} else {
+				fmt.Printf("Not enabling --continue flag (last execution was %.1f minutes ago, threshold is %d minutes)\n", minutesSinceLastExecution, job.ContinueMinutes)
+			}
+		} else if err != sql.ErrNoRows {
+			// Log error but continue execution without --continue flag
+			fmt.Printf("Error checking last execution: %v\n", err)
+		}
+	}
 
 	// Set timeout
 	ctx, cancel := context.WithTimeout(ctx, e.timeout)

@@ -22,3 +22,9 @@ SELECT
     AVG(execution_time_ms) as avg_execution_time_ms
 FROM execution_histories
 WHERE webhook_id = ? AND created_at >= ?;
+
+-- name: GetLastExecution :one
+SELECT * FROM execution_histories 
+WHERE webhook_id = ? AND success = 1
+ORDER BY created_at DESC
+LIMIT 1;

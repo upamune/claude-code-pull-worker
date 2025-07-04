@@ -21,7 +21,9 @@ CREATE TABLE IF NOT EXISTS webhooks (
     model TEXT,
     fallback_model TEXT,
     mcp_servers TEXT,
-    notification_config JSON
+    notification_config JSON,
+    enable_continue BOOLEAN NOT NULL DEFAULT 1,
+    continue_minutes INTEGER NOT NULL DEFAULT 10
 );
 
 -- Create api_keys table  
@@ -83,6 +85,8 @@ CREATE TABLE IF NOT EXISTS job_queue (
     model TEXT,
     fallback_model TEXT,
     mcp_servers TEXT,
+    enable_continue BOOLEAN NOT NULL DEFAULT 0,
+    continue_minutes INTEGER NOT NULL DEFAULT 10,
     FOREIGN KEY (webhook_id) REFERENCES webhooks(id) ON DELETE CASCADE,
     FOREIGN KEY (api_key_id) REFERENCES api_keys(id) ON DELETE SET NULL
 );

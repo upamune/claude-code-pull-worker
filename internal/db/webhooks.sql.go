@@ -18,10 +18,11 @@ INSERT INTO webhooks (
     custom_system_prompt, append_system_prompt,
     allowed_tools, disallowed_tools,
     permission_mode, permission_prompt_tool_name,
-    model, fallback_model, mcp_servers
+    model, fallback_model, mcp_servers,
+    enable_continue, continue_minutes
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, name, description, is_active, created_at, updated_at, working_dir, max_thinking_tokens, max_turns, custom_system_prompt, append_system_prompt, allowed_tools, disallowed_tools, permission_mode, permission_prompt_tool_name, model, fallback_model, mcp_servers, notification_config
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, name, description, is_active, created_at, updated_at, working_dir, max_thinking_tokens, max_turns, custom_system_prompt, append_system_prompt, allowed_tools, disallowed_tools, permission_mode, permission_prompt_tool_name, model, fallback_model, mcp_servers, notification_config, enable_continue, continue_minutes
 `
 
 type CreateWebhookParams struct {
@@ -41,6 +42,8 @@ type CreateWebhookParams struct {
 	Model                    sql.NullString `json:"model"`
 	FallbackModel            sql.NullString `json:"fallback_model"`
 	McpServers               sql.NullString `json:"mcp_servers"`
+	EnableContinue           bool           `json:"enable_continue"`
+	ContinueMinutes          int64          `json:"continue_minutes"`
 }
 
 func (q *Queries) CreateWebhook(ctx context.Context, arg CreateWebhookParams) (Webhook, error) {
@@ -61,6 +64,8 @@ func (q *Queries) CreateWebhook(ctx context.Context, arg CreateWebhookParams) (W
 		arg.Model,
 		arg.FallbackModel,
 		arg.McpServers,
+		arg.EnableContinue,
+		arg.ContinueMinutes,
 	)
 	var i Webhook
 	err := row.Scan(
@@ -83,6 +88,8 @@ func (q *Queries) CreateWebhook(ctx context.Context, arg CreateWebhookParams) (W
 		&i.FallbackModel,
 		&i.McpServers,
 		&i.NotificationConfig,
+		&i.EnableContinue,
+		&i.ContinueMinutes,
 	)
 	return i, err
 }
@@ -97,7 +104,7 @@ func (q *Queries) DeleteWebhook(ctx context.Context, id string) error {
 }
 
 const getWebhook = `-- name: GetWebhook :one
-SELECT id, name, description, is_active, created_at, updated_at, working_dir, max_thinking_tokens, max_turns, custom_system_prompt, append_system_prompt, allowed_tools, disallowed_tools, permission_mode, permission_prompt_tool_name, model, fallback_model, mcp_servers, notification_config FROM webhooks WHERE id = ? AND is_active = 1
+SELECT id, name, description, is_active, created_at, updated_at, working_dir, max_thinking_tokens, max_turns, custom_system_prompt, append_system_prompt, allowed_tools, disallowed_tools, permission_mode, permission_prompt_tool_name, model, fallback_model, mcp_servers, notification_config, enable_continue, continue_minutes FROM webhooks WHERE id = ? AND is_active = 1
 `
 
 func (q *Queries) GetWebhook(ctx context.Context, id string) (Webhook, error) {
@@ -123,13 +130,15 @@ func (q *Queries) GetWebhook(ctx context.Context, id string) (Webhook, error) {
 		&i.FallbackModel,
 		&i.McpServers,
 		&i.NotificationConfig,
+		&i.EnableContinue,
+		&i.ContinueMinutes,
 	)
 	return i, err
 }
 
 const getWebhookWithStats = `-- name: GetWebhookWithStats :one
 SELECT 
-    w.id, w.name, w.description, w.is_active, w.created_at, w.updated_at, w.working_dir, w.max_thinking_tokens, w.max_turns, w.custom_system_prompt, w.append_system_prompt, w.allowed_tools, w.disallowed_tools, w.permission_mode, w.permission_prompt_tool_name, w.model, w.fallback_model, w.mcp_servers, w.notification_config,
+    w.id, w.name, w.description, w.is_active, w.created_at, w.updated_at, w.working_dir, w.max_thinking_tokens, w.max_turns, w.custom_system_prompt, w.append_system_prompt, w.allowed_tools, w.disallowed_tools, w.permission_mode, w.permission_prompt_tool_name, w.model, w.fallback_model, w.mcp_servers, w.notification_config, w.enable_continue, w.continue_minutes,
     COUNT(DISTINCT ak.id) as api_key_count,
     COUNT(DISTINCT eh.id) as execution_count,
     MAX(eh.created_at) as last_execution
@@ -160,6 +169,8 @@ type GetWebhookWithStatsRow struct {
 	FallbackModel            sql.NullString `json:"fallback_model"`
 	McpServers               sql.NullString `json:"mcp_servers"`
 	NotificationConfig       interface{}    `json:"notification_config"`
+	EnableContinue           bool           `json:"enable_continue"`
+	ContinueMinutes          int64          `json:"continue_minutes"`
 	ApiKeyCount              int64          `json:"api_key_count"`
 	ExecutionCount           int64          `json:"execution_count"`
 	LastExecution            interface{}    `json:"last_execution"`
@@ -188,6 +199,8 @@ func (q *Queries) GetWebhookWithStats(ctx context.Context, id string) (GetWebhoo
 		&i.FallbackModel,
 		&i.McpServers,
 		&i.NotificationConfig,
+		&i.EnableContinue,
+		&i.ContinueMinutes,
 		&i.ApiKeyCount,
 		&i.ExecutionCount,
 		&i.LastExecution,
@@ -196,7 +209,7 @@ func (q *Queries) GetWebhookWithStats(ctx context.Context, id string) (GetWebhoo
 }
 
 const listWebhooks = `-- name: ListWebhooks :many
-SELECT id, name, description, is_active, created_at, updated_at, working_dir, max_thinking_tokens, max_turns, custom_system_prompt, append_system_prompt, allowed_tools, disallowed_tools, permission_mode, permission_prompt_tool_name, model, fallback_model, mcp_servers, notification_config FROM webhooks WHERE is_active = 1 ORDER BY created_at DESC
+SELECT id, name, description, is_active, created_at, updated_at, working_dir, max_thinking_tokens, max_turns, custom_system_prompt, append_system_prompt, allowed_tools, disallowed_tools, permission_mode, permission_prompt_tool_name, model, fallback_model, mcp_servers, notification_config, enable_continue, continue_minutes FROM webhooks WHERE is_active = 1 ORDER BY created_at DESC
 `
 
 func (q *Queries) ListWebhooks(ctx context.Context) ([]Webhook, error) {
@@ -228,6 +241,8 @@ func (q *Queries) ListWebhooks(ctx context.Context) ([]Webhook, error) {
 			&i.FallbackModel,
 			&i.McpServers,
 			&i.NotificationConfig,
+			&i.EnableContinue,
+			&i.ContinueMinutes,
 		); err != nil {
 			return nil, err
 		}
@@ -259,6 +274,8 @@ SET name = ?,
     model = ?,
     fallback_model = ?,
     mcp_servers = ?,
+    enable_continue = ?,
+    continue_minutes = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 `
@@ -279,6 +296,8 @@ type UpdateWebhookParams struct {
 	Model                    sql.NullString `json:"model"`
 	FallbackModel            sql.NullString `json:"fallback_model"`
 	McpServers               sql.NullString `json:"mcp_servers"`
+	EnableContinue           bool           `json:"enable_continue"`
+	ContinueMinutes          int64          `json:"continue_minutes"`
 	ID                       string         `json:"id"`
 }
 
@@ -299,6 +318,8 @@ func (q *Queries) UpdateWebhook(ctx context.Context, arg UpdateWebhookParams) er
 		arg.Model,
 		arg.FallbackModel,
 		arg.McpServers,
+		arg.EnableContinue,
+		arg.ContinueMinutes,
 		arg.ID,
 	)
 	return err

@@ -111,6 +111,30 @@ func (q *Queries) GetExecutionStats(ctx context.Context, arg GetExecutionStatsPa
 	return i, err
 }
 
+const getLastExecution = `-- name: GetLastExecution :one
+SELECT id, webhook_id, api_key_id, prompt, response, error, success, execution_time_ms, created_at FROM execution_histories 
+WHERE webhook_id = ? AND success = 1
+ORDER BY created_at DESC
+LIMIT 1
+`
+
+func (q *Queries) GetLastExecution(ctx context.Context, webhookID string) (ExecutionHistory, error) {
+	row := q.db.QueryRowContext(ctx, getLastExecution, webhookID)
+	var i ExecutionHistory
+	err := row.Scan(
+		&i.ID,
+		&i.WebhookID,
+		&i.ApiKeyID,
+		&i.Prompt,
+		&i.Response,
+		&i.Error,
+		&i.Success,
+		&i.ExecutionTimeMs,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listExecutionHistoriesByWebhook = `-- name: ListExecutionHistoriesByWebhook :many
 SELECT id, webhook_id, api_key_id, prompt, response, error, success, execution_time_ms, created_at FROM execution_histories 
 WHERE webhook_id = ?

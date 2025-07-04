@@ -31,6 +31,8 @@ type createWebhookRequest struct {
 	Model                    string          `json:"model"`
 	FallbackModel            string          `json:"fallback_model"`
 	MCPServers               string          `json:"mcp_servers"`
+	EnableContinue           bool            `json:"enable_continue"`
+	ContinueMinutes          int             `json:"continue_minutes"`
 }
 
 func (h *AdminHandler) handleListWebhooks(w http.ResponseWriter, r *http.Request) {
@@ -105,6 +107,9 @@ func (h *AdminHandler) handleCreateWebhook(w http.ResponseWriter, r *http.Reques
 		req.FallbackModel = r.FormValue("fallback_model")
 		req.MCPServers = r.FormValue("mcp_servers")
 		
+		// Parse boolean enable_continue field
+		req.EnableContinue = r.FormValue("enable_continue") == "true"
+		
 		// Parse integer fields
 		if val := r.FormValue("max_thinking_tokens"); val != "" {
 			if n, err := strconv.Atoi(val); err == nil {
@@ -115,6 +120,13 @@ func (h *AdminHandler) handleCreateWebhook(w http.ResponseWriter, r *http.Reques
 			if n, err := strconv.Atoi(val); err == nil {
 				req.MaxTurns = &n
 			}
+		}
+		if val := r.FormValue("continue_minutes"); val != "" {
+			if n, err := strconv.Atoi(val); err == nil {
+				req.ContinueMinutes = n
+			}
+		} else {
+			req.ContinueMinutes = 10 // デフォルト値
 		}
 		
 		// Handle Discord webhook URL
@@ -169,6 +181,8 @@ func (h *AdminHandler) handleCreateWebhook(w http.ResponseWriter, r *http.Reques
 		Model:                    sql.NullString{String: req.Model, Valid: req.Model != ""},
 		FallbackModel:            sql.NullString{String: req.FallbackModel, Valid: req.FallbackModel != ""},
 		McpServers:               sql.NullString{String: req.MCPServers, Valid: req.MCPServers != ""},
+		EnableContinue:           req.EnableContinue,
+		ContinueMinutes:          int64(req.ContinueMinutes),
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -226,6 +240,9 @@ func (h *AdminHandler) handleUpdateWebhook(w http.ResponseWriter, r *http.Reques
 		req.FallbackModel = r.FormValue("fallback_model")
 		req.MCPServers = r.FormValue("mcp_servers")
 		
+		// Parse boolean enable_continue field
+		req.EnableContinue = r.FormValue("enable_continue") == "true"
+		
 		// Parse integer fields
 		if val := r.FormValue("max_thinking_tokens"); val != "" {
 			if n, err := strconv.Atoi(val); err == nil {
@@ -236,6 +253,13 @@ func (h *AdminHandler) handleUpdateWebhook(w http.ResponseWriter, r *http.Reques
 			if n, err := strconv.Atoi(val); err == nil {
 				req.MaxTurns = &n
 			}
+		}
+		if val := r.FormValue("continue_minutes"); val != "" {
+			if n, err := strconv.Atoi(val); err == nil {
+				req.ContinueMinutes = n
+			}
+		} else {
+			req.ContinueMinutes = 10 // デフォルト値
 		}
 		
 		// Handle Discord webhook URL
@@ -285,6 +309,8 @@ func (h *AdminHandler) handleUpdateWebhook(w http.ResponseWriter, r *http.Reques
 		Model:                    sql.NullString{String: req.Model, Valid: req.Model != ""},
 		FallbackModel:            sql.NullString{String: req.FallbackModel, Valid: req.FallbackModel != ""},
 		McpServers:               sql.NullString{String: req.MCPServers, Valid: req.MCPServers != ""},
+		EnableContinue:           req.EnableContinue,
+		ContinueMinutes:          int64(req.ContinueMinutes),
 		ID:                       vars["id"],
 	})
 	if err != nil {

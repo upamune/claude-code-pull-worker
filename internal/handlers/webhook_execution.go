@@ -170,6 +170,8 @@ func (h *WebhookExecutionHandler) HandleWebhookExecution(w http.ResponseWriter, 
 		Model:                    webhook.Model,
 		FallbackModel:            webhook.FallbackModel,
 		McpServers:               webhook.McpServers,
+		EnableContinue:           webhook.EnableContinue,
+		ContinueMinutes:          webhook.ContinueMinutes,
 	})
 	
 	if err != nil {

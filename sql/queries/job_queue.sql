@@ -15,9 +15,11 @@ INSERT INTO job_queue (
     permission_prompt_tool_name,
     model,
     fallback_model,
-    mcp_servers
+    mcp_servers,
+    enable_continue,
+    continue_minutes
 ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 ) RETURNING *;
 
 -- name: DequeueJob :one

@@ -27,7 +27,7 @@ func NewQueueWorker(queries *db.Queries) *QueueWorker {
 	return &QueueWorker{
 		id:       uuid.New().String(),
 		queries:  queries,
-		executor: executor.NewClaudeExecutor(1 * time.Hour),
+		executor: executor.NewClaudeExecutor(1 * time.Hour, queries),
 		stopCh:   make(chan struct{}),
 	}
 }

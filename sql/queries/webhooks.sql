@@ -11,9 +11,10 @@ INSERT INTO webhooks (
     custom_system_prompt, append_system_prompt,
     allowed_tools, disallowed_tools,
     permission_mode, permission_prompt_tool_name,
-    model, fallback_model, mcp_servers
+    model, fallback_model, mcp_servers,
+    enable_continue, continue_minutes
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: UpdateWebhook :exec
@@ -33,6 +34,8 @@ SET name = ?,
     model = ?,
     fallback_model = ?,
     mcp_servers = ?,
+    enable_continue = ?,
+    continue_minutes = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = ?;
 

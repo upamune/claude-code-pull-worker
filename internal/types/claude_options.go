@@ -58,8 +58,9 @@ type ClaudeOptions struct {
 	PermissionPromptToolName string         `json:"permission_prompt_tool_name,omitempty"`
 
 	// Session continuation
-	Continue bool   `json:"continue,omitempty"`
-	Resume   string `json:"resume,omitempty"`
+	Continue        bool `json:"continue,omitempty"`
+	ContinueMinutes int  `json:"continue_minutes,omitempty"`
+	Resume          string `json:"resume,omitempty"`
 
 	// Model configuration
 	Model         string `json:"model,omitempty"`

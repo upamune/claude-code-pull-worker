@@ -68,6 +68,8 @@ type JobQueue struct {
 	Model                    sql.NullString `json:"model"`
 	FallbackModel            sql.NullString `json:"fallback_model"`
 	McpServers               sql.NullString `json:"mcp_servers"`
+	EnableContinue           bool           `json:"enable_continue"`
+	ContinueMinutes          int64          `json:"continue_minutes"`
 }
 
 type SecurityAuditLog struct {
@@ -102,4 +104,6 @@ type Webhook struct {
 	FallbackModel            sql.NullString `json:"fallback_model"`
 	McpServers               sql.NullString `json:"mcp_servers"`
 	NotificationConfig       interface{}    `json:"notification_config"`
+	EnableContinue           bool           `json:"enable_continue"`
+	ContinueMinutes          int64          `json:"continue_minutes"`
 }
